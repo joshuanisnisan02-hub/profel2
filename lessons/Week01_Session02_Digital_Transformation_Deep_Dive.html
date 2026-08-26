@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- skill:chassis -->
+<style>
+/* =====================================================
+   PRESENTATION CHASSIS — style-invariant base styles
+   Fixed 1920×1080 canvas scaled to fit any viewport.
+   Customize colors, fonts, and chrome via :root tokens.
+   ===================================================== */
+
+/* ---------- Universal reset ---------- */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ---------- Theme tokens (override in your deck's CSS) ---------- */
+:root {
+    color-scheme: light;
+
+    --background:      #ffffff;
+    --foreground:      #111111;
+    --card:            #f5f5f5;
+    --card-foreground: var(--foreground);
+    --accent:          #c94a3d;
+    --accent-foreground: #ffffff;
+
+    --muted-foreground: color-mix(in srgb, var(--foreground) 55%, transparent);
+    --border:           color-mix(in srgb, var(--foreground) 12%, transparent);
+
+    --font-display: Georgia, serif;
+    --font-body: -apple-system, system-ui, sans-serif;
+    --font-mono: ui-monospace, monospace;
+
+    /* Reveal animation */
+    --reveal-duration: 0.8s;
+    --reveal-ease:     cubic-bezier(0.16, 1, 0.3, 1);
+    --reveal-distance: 28px;
+
+    /* Chrome (nav dots, keyboard hint) */
+    --nav-dot-size: 9px;
+    --nav-dot-radius: 50%;
+    --nav-dot-color: var(--foreground);
+    --nav-dot-active-color: var(--accent);
+    --nav-dot-opacity: 0.4;
+}
+
+/* ---------- Viewport lock + scroll snap ---------- */
+html, body { height: 100%; overflow-x: hidden; }
+html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
+
+html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+/* ---------- Type scale ----------
+   Fixed px sizes on a 1920×1080 canvas. The canvas is scaled to fit
+   any viewport via transform, so these sizes are absolute within the
+   design surface — no responsive units needed. */
+body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+    font-size: 36px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1 { font-size: 120px; line-height: 1.05; letter-spacing: -0.02em; }
+h2 { font-size: 64px; line-height: 1.1; letter-spacing: -0.01em; }
+h3 { font-size: 44px; line-height: 1.2; }
+.eyebrow {
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.3;
+}
+
+ul, ol { padding-left: 48px; display: flex; flex-direction: column; gap: 24px; }
+li::marker { color: var(--accent); }
+
+/* ---------- Slide structure ----------
+   .slide is the authored 1920×1080 artboard.
+   The chassis wraps it in viewport + scale layers at runtime. */
+.slide-viewport {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: block;
+    position: relative;
+    background: var(--background);
+    isolation: isolate;
+    z-index: 1;
+}
+
+.slide-scale {
+    width: 1920px;
+    height: 1080px;
+    transform: translate(-50%, -50%) scale(var(--slide-scale, 1));
+    transform-origin: center center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+}
+
+.slide {
+    width: 1920px;
+    height: 1080px;
+    padding: 80px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 60px;
+    position: relative;
+    background: transparent;
+}
+
+
+/* ---------- Image defaults ---------- */
+img, .image-container {
+    max-width: 100%;
+    max-height: 540px;
+    object-fit: contain;
+}
+
+/* ---------- Reveal primitives ----------
+   Driven by chassis.js via the Web Animations API, not CSS transitions.
+   Put .reveal* or .step on ANY element — author CSS on the same element
+   (opacity, transform, transition, filter) never conflicts, because
+   WAAPI animations live in the animation cascade origin and win over
+   normal author declarations. The .dN stagger classes below still apply
+   to theme-authored CSS animations via animation-delay.
+
+   Variants: .reveal (fade + up), .reveal-left, .reveal-right,
+   .reveal-scale, .reveal-blur. .step stays hidden until the user
+   advances forward. Don't combine .step with .reveal* on the same
+   element. */
+
+/* FOUC guard: hide reveals until chassis.js marks the document ready. */
+:root:not(.reveals-ready) .reveal,
+:root:not(.reveals-ready) .reveal-left,
+:root:not(.reveals-ready) .reveal-right,
+:root:not(.reveals-ready) .reveal-scale,
+:root:not(.reveals-ready) .reveal-blur,
+:root:not(.reveals-ready) .step {
+    opacity: 0;
+}
+:root:not(.reveals-ready) .reveal-blur { filter: blur(10px); }
+
+/* ---------- Stagger delays (.d1 … .d8) ---------- */
+.slide.visible .d1 { transition-delay: 0.10s; animation-delay: 0.10s; }
+.slide.visible .d2 { transition-delay: 0.25s; animation-delay: 0.25s; }
+.slide.visible .d3 { transition-delay: 0.40s; animation-delay: 0.40s; }
+.slide.visible .d4 { transition-delay: 0.55s; animation-delay: 0.55s; }
+.slide.visible .d5 { transition-delay: 0.70s; animation-delay: 0.70s; }
+.slide.visible .d6 { transition-delay: 0.85s; animation-delay: 0.85s; }
+.slide.visible .d7 { transition-delay: 1.00s; animation-delay: 1.00s; }
+.slide.visible .d8 { transition-delay: 1.15s; animation-delay: 1.15s; }
+
+/* ---------- Nav dots ----------
+   Default: right-center (vertical stack on right edge).
+   Override with <body data-nav="bottom | top-right | hidden">. */
+.nav-dots {
+    position: fixed;
+    right: clamp(0.6rem, 1.5vw, 1.4rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1vh, 0.8rem);
+    z-index: 50;
+}
+
+body[data-nav="bottom"] .nav-dots {
+    right: auto;
+    top: auto;
+    bottom: clamp(1rem, 2.5vh, 2rem);
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+}
+
+body[data-nav="top-right"] .nav-dots {
+    right: clamp(1rem, 2.5vw, 2rem);
+    top: clamp(1rem, 2.5vh, 2rem);
+    transform: none;
+    flex-direction: row;
+}
+
+body[data-nav="hidden"] .nav-dots { display: none; }
+
+body[data-nav="bottom"] .keyboard-hint {
+    left: clamp(1rem, 2vw, 1.5rem);
+    transform: none;
+}
+
+.nav-dots button {
+    width: var(--nav-dot-size);
+    height: var(--nav-dot-size);
+    border-radius: var(--nav-dot-radius);
+    border: 1.5px solid var(--nav-dot-color);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+    opacity: var(--nav-dot-opacity);
+}
+.nav-dots button:hover { opacity: 0.85; transform: scale(1.15); }
+.nav-dots button:focus-visible {
+    outline: 2px solid var(--nav-dot-active-color);
+    outline-offset: 3px;
+    opacity: 1;
+}
+.nav-dots button.active {
+    background: var(--nav-dot-active-color);
+    border-color: var(--nav-dot-active-color);
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+/* ---------- Keyboard hint ---------- */
+.keyboard-hint {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.2vh, 1rem);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--muted-foreground);
+    z-index: 50;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.keyboard-hint kbd {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.9em;
+    padding: 0.05em 0.4em;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--background);
+    margin: 0 0.15em;
+}
+
+/* ---------- Credit line ---------- */
+.chassis-credit {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.2vh, 1rem);
+    left: clamp(1rem, 2vw, 1.5rem);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.02em;
+    z-index: 50;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.chassis-credit .chassis-credit-emoji {
+    font-style: normal;
+    margin: 0 0.15em;
+}
+
+body[data-nav="bottom"] .chassis-credit {
+    left: auto;
+    right: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* ---------- Custom cursor ---------- */
+.chassis-cursor {
+    position: fixed;
+    top: 0; left: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: var(--accent);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    will-change: transform;
+}
+.chassis-cursor.visible { opacity: 1; }
+body.artifact-editor-editing .chassis-cursor { display: none; }
+
+@media (hover: none) {
+    .chassis-cursor { display: none; }
+}
+
+body.chassis-cursor-active:not(.artifact-editor-editing),
+body.chassis-cursor-active:not(.artifact-editor-editing) * { cursor: none; }
+
+/* ---------- Opt-outs ---------- */
+body[data-no-chrome] .nav-dots,
+body[data-no-chrome] .keyboard-hint,
+body[data-no-chrome] .chassis-credit,
+body[data-no-chrome] .chassis-cursor,
+body[data-no-chrome] .artifact-editor-toggle { display: none; }
+
+:fullscreen .keyboard-hint,
+:fullscreen .chassis-credit,
+:fullscreen .artifact-editor-toggle { display: none; }
+
+@media (hover: none) {
+    .keyboard-hint,
+    .chassis-credit { display: none; }
+}
+
+@media (max-width: 900px), (max-height: 560px) {
+    .nav-dots,
+    .keyboard-hint,
+    .chassis-credit,
+    .chassis-cursor { display: none; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.2s !important;
+    }
+    html { scroll-behavior: auto; }
+}
+
+/* ---------- Print (PDF export) ---------- */
+@media print {
+    .nav-dots, .keyboard-hint, .chassis-credit, .chassis-cursor { display: none !important; }
+    html, body { height: auto; overflow: visible; }
+    html { scroll-snap-type: none; }
+    .slide-viewport {
+        page-break-after: always;
+        break-after: page;
+        height: 100vh;
+    }
+    .slide-scale {
+        position: static !important;
+        transform: none !important;
+        width: 100% !important;
+        height: auto !important;
+    }
+    .slide {
+        width: 100% !important;
+        height: auto !important;
+    }
+}
+
+</style>
+<script>
+/* =====================================================
+   PRESENTATION CHASSIS — slide controller
+   Auto-initializes on DOMContentLoaded.
+   Exposes window.slides for programmatic control.
+   ===================================================== */
+(function () {
+    'use strict';
+
+    const REVEAL_SELECTOR = '.reveal, .reveal-left, .reveal-right, .reveal-scale, .reveal-blur';
+    const STEP_SELECTOR = '.step';
+    const ALL_REVEAL_SELECTOR = REVEAL_SELECTOR + ', ' + STEP_SELECTOR;
+    const VIEWPORT_CLASS = 'slide-viewport';
+    const SCALE_CLASS = 'slide-scale';
+
+    function _detectLang() {
+        const param = new URLSearchParams(location.search).get('lang');
+        return (param || navigator.language || 'en').slice(0, 2).toLowerCase();
+    }
+
+    class SlidePresentation {
+        constructor() {
+            this.slides = Array.from(document.querySelectorAll('.slide'));
+            if (this.slides.length === 0) return;
+
+            // Ensure every slide has an id so hashes + anchor links work.
+            // Author-defined ids are preserved; the rest get slide-N (1-indexed).
+            this.slides.forEach((slide, idx) => {
+                if (!slide.id) slide.id = `slide-${idx + 1}`;
+            });
+            this.viewports = this._setupViewports();
+            this.scales = this.viewports.map((viewport) => viewport.querySelector(`.${SCALE_CLASS}`));
+
+            // Hide every reveal element BEFORE lifting the CSS FOUC guard.
+            // After this, .reveals-ready is on <html>, so CSS no longer hides
+            // reveals — inline styles keep them hidden until JS animates them.
+            this._setupReveals();
+
+            this.navDotsContainer = this._ensureNavDots();
+            this.keyboardHint = this._ensureKeyboardHint();
+            this.credit = this._ensureCredit();
+
+            this._setupCanvasScale();
+            this._setupIntersectionObserver();
+            this._setupKeyboardNav();
+            this._setupWheelNav();
+            this._setupTouchNav();
+            this._setupViewportSync();
+            this._buildNavDots();
+            this._setupHashNav();
+            this._setupCursor();
+            this._setupPrintSettling();
+
+            // If URL has a matching hash, start there; otherwise start at slide 0.
+            const initial = this._slideIndexFromHash(location.hash);
+            this.currentSlide = initial >= 0 ? initial : 0;
+            if (this.currentSlide !== 0) {
+                this._scrollToSlide(this.currentSlide, 'auto');
+            }
+            // Reveal initial slide immediately (observer may miss it on load).
+            const first = this.slides[this.currentSlide];
+            first.classList.add('visible');
+            this._playSlideReveals(first);
+            this._updateNavDots();
+        }
+
+        /* ---------- Viewport scaffolding ----------
+           Authors write .slide as the 1920×1080 artboard. The chassis wraps
+           that authored section in viewport and scale layers. */
+        _setupViewports() {
+            return this.slides.map((slide) => {
+                const existingScale = slide.parentElement?.classList.contains(SCALE_CLASS)
+                    ? slide.parentElement
+                    : null;
+                const existingViewport = existingScale?.parentElement?.classList.contains(VIEWPORT_CLASS)
+                    ? existingScale.parentElement
+                    : null;
+                if (existingViewport) {
+                    this._syncViewportBackground(slide, existingViewport);
+                    return existingViewport;
+                }
+
+                const viewport = document.createElement('div');
+                viewport.className = VIEWPORT_CLASS;
+                const scale = document.createElement('div');
+                scale.className = SCALE_CLASS;
+
+                slide.parentNode.insertBefore(viewport, slide);
+                viewport.appendChild(scale);
+                scale.appendChild(slide);
+                this._syncViewportBackground(slide, viewport);
+
+                return viewport;
+            });
+        }
+
+        _syncViewportBackground(slide, viewport) {
+            const style = getComputedStyle(slide);
+            const hasBackgroundImage = style.backgroundImage && style.backgroundImage !== 'none';
+            const hasBackgroundColor = !['rgba(0, 0, 0, 0)', 'transparent'].includes(style.backgroundColor);
+            if (hasBackgroundImage || hasBackgroundColor) {
+                viewport.style.background = style.background;
+            } else {
+                viewport.style.background = '';
+            }
+            slide.style.background = 'transparent';
+        }
+
+        /* ---------- DOM scaffolding (auto-inserted if missing) ---------- */
+        _ensureNavDots() {
+            let el = document.getElementById('navDots');
+            if (!el) {
+                el = document.createElement('nav');
+                el.id = 'navDots';
+                el.className = 'nav-dots';
+                el.setAttribute('aria-label', 'Slide navigation');
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        _ensureKeyboardHint() {
+            let el = document.querySelector('.keyboard-hint');
+            if (!el) {
+                const i18n = {
+                    en: { navigate: 'navigate', restart: 'restart', fullscreen: 'fullscreen' },
+                    es: { navigate: 'navegar',   restart: 'inicio',   fullscreen: 'fullscreen' },
+                    fr: { navigate: 'naviguer',  restart: 'début',    fullscreen: 'fullscreen' },
+                    de: { navigate: 'blättern',  restart: 'anfang',   fullscreen: 'vollbild' },
+                    pt: { navigate: 'navegar',   restart: 'início',   fullscreen: 'fullscreen' },
+                    ja: { navigate: '移動',      restart: '先頭',      fullscreen: '全画面' },
+                    ko: { navigate: '이동',      restart: '처음',      fullscreen: '전체화면' },
+                    zh: { navigate: '翻页',      restart: '重置',      fullscreen: '全屏' },
+                    it: { navigate: 'navigare',  restart: 'inizio',   fullscreen: 'fullscreen' },
+                    nl: { navigate: 'bladeren',  restart: 'begin',    fullscreen: 'vollscherm' },
+                };
+                const t = i18n[_detectLang()] || i18n.en;
+                el = document.createElement('div');
+                el.className = 'keyboard-hint';
+                el.innerHTML = `<kbd>←</kbd> <kbd>→</kbd> ${t.navigate} &middot; <kbd>R</kbd> ${t.restart} &middot; <kbd>F</kbd> ${t.fullscreen}`;
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        _ensureCredit() {
+            let el = document.querySelector('.chassis-credit');
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'chassis-credit';
+                el.setAttribute('aria-hidden', 'true');
+                el.innerHTML = '💜 by ClickUp Brain';
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        /* ---------- Reveal engine ----------
+           Reveals are driven by the Web Animations API instead of CSS
+           transitions. This lets authors put .reveal* / .step on any
+           element: animation values live in the animation cascade origin
+           and win over normal author declarations, so no wrapper element
+           is required to isolate the chassis from author CSS.
+
+           State per slide:
+           - "hidden":  inline opacity/transform/filter from the 'from'
+                        keyframe of the variant. Set on init and on
+                        forward re-entry.
+           - "played":  animation is running or has run; the class
+                        `reveals-played` on the slide makes playback
+                        idempotent so observer re-fires (resize,
+                        fullscreen) don't restart the animation.
+           - "settled": animation canceled, inline styles cleared. Used
+                        for backward entries (we skip the animation and
+                        show the final state instantly) and for print. */
+
+        _setupReveals() {
+            // Lift the CSS FOUC guard first so getComputedStyle reads each
+            // element's natural opacity, not the guard's blanket opacity: 0.
+            // No paint occurs mid-task — inline hidden styles are applied
+            // before the browser yields, so there is no visible flash.
+            document.documentElement.classList.add('reveals-ready');
+            this.slides.forEach((slide) => {
+                slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                    el._targetOpacity = parseFloat(getComputedStyle(el).opacity);
+                    this._applyHiddenStyle(el);
+                });
+            });
+        }
+
+        _setupPrintSettling() {
+            // Browsers snapshot the document for print/PDF export. WAAPI
+            // animations don't necessarily complete in that snapshot, so
+            // settle every slide to its final state first. After printing,
+            // reset — but only for slides that haven't already been viewed,
+            // so the audience experience picks up where it left off.
+            window.addEventListener('beforeprint', () => {
+                this.slides.forEach((slide) => this._settleSlide(slide));
+            });
+        }
+
+        _readTokens() {
+            const cs = getComputedStyle(document.documentElement);
+            const rawDuration = parseFloat(cs.getPropertyValue('--reveal-duration'));
+            const duration = Number.isFinite(rawDuration) ? rawDuration * 1000 : 800;
+            const ease = cs.getPropertyValue('--reveal-ease').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
+            const distance = cs.getPropertyValue('--reveal-distance').trim() || '28px';
+            const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            return {
+                duration: reducedMotion ? 1 : duration,
+                ease,
+                distance,
+            };
+        }
+
+        _getRevealDelay(el) {
+            // Use getAttribute('class') rather than el.className: on SVG
+            // elements, `.className` is an SVGAnimatedString (not a string)
+            // and calling .match on it throws. getAttribute is uniform
+            // across HTML and SVG.
+            const classes = el.getAttribute('class') || '';
+            const m = classes.match(/\bd([1-8])\b/);
+            if (!m) return 0;
+            // Matches CSS .dN: d1 = 100ms, d2 = 250ms, +150ms per step.
+            return 100 + (parseInt(m[1], 10) - 1) * 150;
+        }
+
+        _getRevealKeyframes(el, distance) {
+            const to = el._targetOpacity ?? 1;
+            if (el.classList.contains('reveal-left')) {
+                return [
+                    { opacity: 0, transform: `translateX(calc(-1 * ${distance}))` },
+                    { opacity: to, transform: 'translateX(0)' },
+                ];
+            }
+            if (el.classList.contains('reveal-right')) {
+                return [
+                    { opacity: 0, transform: `translateX(${distance})` },
+                    { opacity: to, transform: 'translateX(0)' },
+                ];
+            }
+            if (el.classList.contains('reveal-scale')) {
+                return [
+                    { opacity: 0, transform: 'scale(0.88)' },
+                    { opacity: to, transform: 'scale(1)' },
+                ];
+            }
+            if (el.classList.contains('reveal-blur')) {
+                return [
+                    { opacity: 0, filter: 'blur(10px)' },
+                    { opacity: to, filter: 'blur(0)' },
+                ];
+            }
+            // Default: .reveal or .step (slide up + fade)
+            return [
+                { opacity: 0, transform: `translateY(${distance})` },
+                { opacity: to, transform: 'translateY(0)' },
+            ];
+        }
+
+        _applyHiddenStyle(el) {
+            const { distance } = this._readTokens();
+            const from = this._getRevealKeyframes(el, distance)[0];
+            if ('opacity' in from) el.style.opacity = from.opacity;
+            if ('transform' in from) el.style.transform = from.transform;
+            if ('filter' in from) el.style.filter = from.filter;
+        }
+
+        _clearHiddenStyle(el) {
+            el.style.opacity = '';
+            el.style.transform = '';
+            el.style.filter = '';
+        }
+
+        _cancelReveal(el) {
+            if (el._revealAnim) {
+                el._revealAnim.cancel();
+                el._revealAnim = null;
+            }
+        }
+
+        _playReveal(el, delayOverride) {
+            this._cancelReveal(el);
+            const { duration, ease, distance } = this._readTokens();
+            const delay = typeof delayOverride === 'number' ? delayOverride : this._getRevealDelay(el);
+            const keyframes = this._getRevealKeyframes(el, distance);
+            // fill: 'backwards' applies the 'from' keyframe during the
+            // stagger delay so the element stays hidden until its turn,
+            // without pinning the 'to' keyframe after the animation ends.
+            // This lets co-existing author CSS (e.g. a `.pulse` CSS
+            // animation on the same element) take over naturally once the
+            // entrance completes — otherwise our fill would mask anything
+            // the author wanted to happen post-reveal.
+            const anim = el.animate(keyframes, {
+                duration,
+                delay,
+                easing: ease,
+                fill: 'backwards',
+            });
+            el._revealAnim = anim;
+            // Safe to clear inline 'from' styles now — the animation's
+            // backwards-fill holds the element at the 'from' keyframe for
+            // the duration of any stagger delay.
+            this._clearHiddenStyle(el);
+        }
+
+        _playSlideReveals(slide) {
+            if (slide.classList.contains('reveals-played')) return;
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(REVEAL_SELECTOR).forEach((el) => this._playReveal(el));
+            // .step elements stay hidden until the user advances.
+        }
+
+        _resetSlideReveals(slide) {
+            // Forward re-entry: cancel in-flight animations, re-hide
+            // everything, and reset step state so the slide replays cleanly
+            // when the observer next adds .visible.
+            slide.classList.remove('reveals-played');
+            slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._applyHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step.step-shown').forEach((el) => el.classList.remove('step-shown'));
+        }
+
+        _settleSlide(slide) {
+            // Print / PDF export: jump to the final state with everything
+            // shown, so every step appears in the exported document.
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._clearHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step').forEach((el) => el.classList.add('step-shown'));
+        }
+
+        _rewindSlide(slide) {
+            // Backward re-entry: show reveals instantly (no replay — the
+            // viewer already saw the intro) but hide every step, so the
+            // slide is positioned at the start of its stepped content and
+            // can be stepped through again.
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._clearHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step').forEach((el) => {
+                el.classList.remove('step-shown');
+                this._cancelReveal(el);
+                this._applyHiddenStyle(el);
+            });
+        }
+
+        /* ---------- Navigation ----------
+           goTo scrolls to the target. Both forward-replay and backward-
+           rewind need to mutate the target BEFORE scrolling — while it's
+           still offscreen — so the viewer never sees the old state flash
+           into view. Resetting after the slide is in view causes a visible
+           "show then hide" blink; the IntersectionObserver fires too late
+           (80% threshold) to catch it. */
+        goTo(index) {
+            const clamped = Math.max(0, Math.min(this.slides.length - 1, index));
+            if (clamped === this.currentSlide) return;
+
+            const target = this.slides[clamped];
+            const goingForward = clamped > this.currentSlide;
+
+            if (target.classList.contains('visible')) {
+                if (goingForward) {
+                    // Forward replay: full reset so the observer can play reveals fresh.
+                    target.classList.remove('visible');
+                    this._resetSlideReveals(target);
+                } else {
+                    // Backward rewind: hide any shown steps so the slide
+                    // scrolls back in at the start of its stepped content.
+                    this._rewindSlide(target);
+                }
+            }
+
+            this._scrollToSlide(clamped, 'smooth');
+        }
+
+        _scrollToSlide(index, behavior) {
+            this.viewports[index]?.scrollIntoView({ behavior, block: 'start' });
+        }
+
+        _slideIndexFromHash(hash) {
+            if (!hash) return -1;
+            return this.slides.findIndex((s) => '#' + s.id === hash);
+        }
+
+        _syncHash() {
+            const slide = this.slides[this.currentSlide];
+            if (!slide || !slide.id) return;
+            const newHash = '#' + slide.id;
+            if (location.hash !== newHash) {
+                // replaceState — keeps the URL in sync without polluting history,
+                // so the browser back button exits the deck instead of stepping through slides.
+                try {
+                    history.replaceState(null, '', newHash);
+                } catch {
+                    // Sandboxed iframes (opaque origin, about:srcdoc) reject URL
+                    // mutation with a SecurityError. Hash sync is a nicety — an
+                    // unguarded throw here kills the observer callback before it
+                    // marks the slide visible and plays its reveals.
+                }
+            }
+        }
+
+        _setupHashNav() {
+            // React to external hash changes (anchor link clicks, back/forward if user uses pushState manually)
+            window.addEventListener('hashchange', () => {
+                const idx = this._slideIndexFromHash(location.hash);
+                if (idx >= 0 && idx !== this.currentSlide) this.goTo(idx);
+            });
+        }
+
+        /* ---------- Custom cursor ----------
+           Accent disc that follows the pointer, hidden after idle. */
+        _setupCursor() {
+            if (!matchMedia('(hover: hover)').matches) return;
+
+            const cursor = document.createElement('div');
+            cursor.className = 'chassis-cursor';
+            cursor.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(cursor);
+            document.body.classList.add('chassis-cursor-active');
+
+            const half = 16;  // matches width/height / 2 in CSS
+            const IDLE_MS = 2500;
+            let idleTimer = null;
+
+            const show = () => {
+                cursor.classList.add('visible');
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                    cursor.classList.remove('visible');
+                }, IDLE_MS);
+            };
+            const hide = () => {
+                clearTimeout(idleTimer);
+                cursor.classList.remove('visible');
+            };
+
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.transform = `translate3d(${e.clientX - half}px, ${e.clientY - half}px, 0)`;
+                show();
+            });
+            document.addEventListener('mouseleave', hide);
+            document.addEventListener('mouseenter', show);
+        }
+
+        /* ---------- Fullscreen ---------- */
+        toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.().catch(() => {});
+            } else {
+                document.exitFullscreen?.();
+            }
+        }
+
+        next() { this.goTo(this.currentSlide + 1); }
+        prev() { this.goTo(this.currentSlide - 1); }
+        first() { this.goTo(0); }
+        last() { this.goTo(this.slides.length - 1); }
+
+        /* ---------- Step-aware advance / retreat ----------
+           advance() reveals the next .step on the current slide (if any),
+           otherwise advances to the next slide. retreat() hides the last
+           revealed step, otherwise goes back to the previous slide. */
+        advance() {
+            const current = this.slides[this.currentSlide];
+            const nextStep = current?.querySelector('.step:not(.step-shown)');
+            if (nextStep) {
+                nextStep.classList.add('step-shown');
+                // No stagger on click-reveal — the user's gesture is the trigger.
+                this._playReveal(nextStep, 0);
+                return;
+            }
+            this.next();
+        }
+        retreat() {
+            const current = this.slides[this.currentSlide];
+            const shown = current?.querySelectorAll('.step.step-shown');
+            if (shown && shown.length > 0) {
+                const last = shown[shown.length - 1];
+                last.classList.remove('step-shown');
+                this._cancelReveal(last);
+                this._applyHiddenStyle(last);
+                return;
+            }
+            this.prev();
+        }
+
+        /* ---------- Intersection observer ----------
+           Fire late (>= 80% in view) so reveals play on a settled slide.
+           This is the single source of truth for active-slide state.
+
+           Forward:  add .visible, play reveals. (goTo() has already reset
+                     the target to pre-reveal state if this is a re-visit,
+                     so the animation is fresh either way.)
+           Backward: add .visible, rewind to the start of the stepped
+                     content — reveals are shown instantly (no replay) and
+                     every step is hidden again so the viewer can step
+                     through it fresh. */
+        _setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const idx = this.viewports.indexOf(entry.target);
+                    if (idx < 0) return;
+                    const slide = this.slides[idx];
+
+                    if (idx === this.currentSlide) {
+                        // Same-slide re-fire (initial load, resize, fullscreen).
+                        if (!slide.classList.contains('visible')) {
+                            slide.classList.add('visible');
+                        }
+                        // Idempotent: only plays if not already marked played.
+                        this._playSlideReveals(slide);
+                        return;
+                    }
+
+                    const goingForward = idx > this.currentSlide;
+                    this.currentSlide = idx;
+                    this._updateNavDots();
+                    this._syncHash();
+
+                    slide.classList.add('visible');
+                    if (goingForward) {
+                        this._playSlideReveals(slide);
+                    } else {
+                        this._rewindSlide(slide);
+                    }
+                });
+            }, { threshold: 0.8 });
+
+            this.viewports.forEach((viewport) => observer.observe(viewport));
+        }
+
+        /* ---------- Keyboard ---------- */
+        _setupKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                // Skip when user is editing text
+                if (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+
+                switch (e.key) {
+                    // Step-aware: consume steps first, then advance slides
+                    case 'ArrowDown':
+                    case 'ArrowRight':
+                    case ' ':
+                        e.preventDefault(); this.advance(); break;
+                    case 'ArrowUp':
+                    case 'ArrowLeft':
+                        e.preventDefault(); this.retreat(); break;
+                    // Slide-level: always skip past steps
+                    case 'PageDown':
+                        e.preventDefault(); this.next(); break;
+                    case 'PageUp':
+                        e.preventDefault(); this.prev(); break;
+                    case 'Home':
+                        e.preventDefault(); this.first(); break;
+                    case 'End':
+                        e.preventDefault(); this.last(); break;
+                    case 'f':
+                    case 'F':
+                        e.preventDefault(); this.toggleFullscreen(); break;
+                    case 'r':
+                    case 'R':
+                        e.preventDefault(); this.first(); break;
+                }
+            });
+        }
+
+        /* ---------- Wheel / trackpad ----------
+           ALWAYS preventDefault — letting any native wheel scroll through
+           races against scrollIntoView + mandatory snap, and blocks macOS
+           two-finger horizontal swipes from triggering browser back/forward.
+           Whichever axis has the larger magnitude wins, so vertical scroll
+           and horizontal trackpad swipes both drive advance/retreat. Lock
+           briefly after a gesture so trackpad inertia (continuous small
+           deltas) can't spam next(). */
+        _setupWheelNav() {
+            let locked = false;
+            window.addEventListener('wheel', (e) => {
+                if (e.ctrlKey) return;                // preserve browser pinch-zoom (ctrl+wheel)
+                e.preventDefault();                   // block native scroll + horizontal back-swipe
+                if (locked) return;
+                const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                if (Math.abs(delta) < 20) return;     // ignore tiny flicks
+                locked = true;
+                if (delta > 0) this.advance(); else this.retreat();
+                setTimeout(() => { locked = false; }, 500);
+            }, { passive: false });
+        }
+
+        /* ---------- Touch / swipe ----------
+           Horizontal swipes advance / retreat slides; left = next, right =
+           prev (matches stories / carousel conventions). Dominantly
+           vertical swipes fall through to native scroll-snap so the
+           existing top/bottom behavior keeps working. A time budget
+           rejects slow pans that were really aborted scrolls. */
+        _setupTouchNav() {
+            const MIN_DISTANCE = 50;     // px — below this is a tap or jitter
+            const MAX_TIME = 600;        // ms — slower than this is a pan, not a swipe
+            const DOMINANCE = 1.2;       // horizontal must beat vertical by this factor
+
+            let startX = 0, startY = 0, startTime = 0;
+            let tracking = false;
+
+            window.addEventListener('touchstart', (e) => {
+                if (document.body.classList.contains('artifact-editor-editing')) { tracking = false; return; }
+                if (e.touches.length !== 1) { tracking = false; return; }
+                const t = e.touches[0];
+                startX = t.clientX;
+                startY = t.clientY;
+                startTime = performance.now();
+                tracking = true;
+            }, { passive: true });
+
+            window.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                const ax = Math.abs(dx), ay = Math.abs(dy);
+                if (ax < MIN_DISTANCE) return;
+                if (ax < ay * DOMINANCE) return;
+                if (performance.now() - startTime > MAX_TIME) return;
+                if (dx < 0) this.advance(); else this.retreat();
+            }, { passive: true });
+
+            window.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+        }
+
+        /* ---------- Canvas scaling ----------
+           Each scaler holds a fixed 1920×1080 slide. Compute the
+           scale factor that fits it inside the viewport and apply via
+           CSS custom property. Runs on init, resize, and fullscreen. */
+        _setupCanvasScale() {
+            const CANVAS_W = 1920;
+            const CANVAS_H = 1080;
+            const scales = this.scales;
+
+            const update = () => {
+                const scale = Math.min(
+                    window.innerWidth / CANVAS_W,
+                    window.innerHeight / CANVAS_H
+                );
+                scales.forEach((el) => {
+                    el?.style.setProperty('--slide-scale', scale);
+                });
+            };
+
+            update();
+            window.addEventListener('resize', update);
+            document.addEventListener('fullscreenchange', () => {
+                requestAnimationFrame(update);
+            });
+        }
+
+        /* ---------- Viewport sync ----------
+           Resize / fullscreenchange → realign current slide. Each slide is
+           100vh, so a viewport height change leaves the existing scroll
+           position out of alignment with the slide top; scroll-snap doesn't
+           re-snap on its own. */
+        _setupViewportSync() {
+            const realign = () => {
+                requestAnimationFrame(() => {
+                    this._scrollToSlide(this.currentSlide, 'auto');
+                });
+            };
+            window.addEventListener('resize', realign);
+            document.addEventListener('fullscreenchange', realign);
+        }
+
+        /* ---------- Nav dots ---------- */
+        _buildNavDots() {
+            // Clear first — prevents duplicates when DOM is re-serialized/re-opened
+            this.navDotsContainer.innerHTML = '';
+            this.slides.forEach((slide, idx) => {
+                const dot = document.createElement('button');
+                dot.setAttribute('aria-label', `Go to slide ${idx + 1}`);
+                if (idx === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => this.goTo(idx));
+                this.navDotsContainer.appendChild(dot);
+            });
+        }
+
+        _updateNavDots() {
+            const dots = this.navDotsContainer.querySelectorAll('button');
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === this.currentSlide);
+            });
+        }
+    }
+
+    /* ---------- Auto-init ---------- */
+    function init() {
+        // Each slide canvas is its own editable host for the inline editor.
+        document.querySelectorAll('.slide').forEach(function (el) {
+            el.classList.add('artifact-editable');
+        });
+        window.slides = new SlidePresentation();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chassis -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PROFEL 2 - Week 1 Session 2: Digital Transformation Deep Dive</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" />
+  <style>
+    :root {
+      --background: #f9f7f4;
+      --foreground: #2d3748;
+      --accent: #2a8f9e;
+      --accent-foreground: #ffffff;
+      --coral: #e07a5f;
+      --mint: #d4edda;
+      --card: #ffffff;
+      --card-foreground: #2d3748;
+      --border: rgba(45,55,72,0.08);
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Work Sans', sans-serif;
+    }
+    body { background: var(--background); }
+    h1, h2, h3 { font-family: var(--font-display); color: var(--foreground); letter-spacing: -0.02em; }
+    p, li, span, td, th { font-family: var(--font-body); color: var(--foreground); }
+    .slide { background: var(--background); padding: 80px; display: flex; flex-direction: column; justify-content: center; }
+    .title-slide { background: linear-gradient(135deg, #f0fafb 0%, #f9f7f4 40%, #fef5f0 100%); align-items: center; text-align: center; position: relative; overflow: hidden; }
+    .title-slide::before { content: ''; position: absolute; top: -200px; right: -200px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(42,143,158,0.08) 0%, transparent 70%); border-radius: 50%; }
+    .title-slide h1 { font-size: 80px; font-weight: 800; line-height: 1.05; margin-bottom: 24px; }
+    .title-slide .subtitle { font-size: 34px; color: var(--accent); font-weight: 500; margin-bottom: 16px; }
+    .title-slide .meta { font-size: 22px; color: rgba(45,55,72,0.6); font-weight: 300; }
+    .section-header { background: linear-gradient(135deg, var(--accent) 0%, #1a6b77 100%); align-items: center; text-align: center; }
+    .section-header h1 { color: #fff; font-size: 68px; font-weight: 700; }
+    .section-header p { color: rgba(255,255,255,0.85); font-size: 30px; max-width: 800px; }
+    .section-header .section-num { color: rgba(255,255,255,0.4); font-size: 120px; font-weight: 800; position: absolute; top: 60px; left: 80px; }
+    .content-slide h2 { font-size: 52px; font-weight: 700; margin-bottom: 36px; line-height: 1.15; }
+    .content-slide h3 { font-size: 38px; font-weight: 600; margin-bottom: 28px; color: var(--accent); }
+    .content-slide p { font-size: 30px; line-height: 1.5; max-width: 1400px; color: rgba(45,55,72,0.8); }
+    .content-slide ul { list-style: none; padding: 0; }
+    .content-slide ul li { font-size: 28px; line-height: 1.5; padding: 10px 0 10px 44px; position: relative; color: rgba(45,55,72,0.85); }
+    .content-slide ul li::before { content: ''; position: absolute; left: 0; top: 20px; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; }
+    .eyebrow { font-family: var(--font-body); font-size: 20px; font-weight: 500; color: var(--coral); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+    .card-grid { display: grid; gap: 24px; margin-top: 28px; }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .card { background: var(--card); border-radius: 16px; padding: 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid var(--border); }
+    .card h4 { font-family: var(--font-display); font-size: 26px; font-weight: 600; margin-bottom: 10px; color: var(--accent); }
+    .card p { font-size: 22px; line-height: 1.45; color: rgba(45,55,72,0.75); }
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 20px; border-radius: 12px; overflow: hidden; }
+    .data-table th { background: var(--accent); color: #fff; font-family: var(--font-display); font-size: 22px; font-weight: 600; padding: 16px 20px; text-align: left; }
+    .data-table td { padding: 14px 20px; font-size: 22px; border-bottom: 1px solid var(--border); background: var(--card); }
+    .data-table tr:nth-child(even) td { background: #f8fafb; }
+    .highlight-box { background: linear-gradient(135deg, #f0fafb, #e8f8fa); border-left: 5px solid var(--accent); border-radius: 0 12px 12px 0; padding: 28px 36px; margin-top: 20px; }
+    .highlight-box p { font-size: 26px; color: var(--foreground); }
+    .split { flex-direction: row; gap: 60px; align-items: center; }
+    .split .text-side { flex: 1; }
+    .split .img-side { flex: 1; border-radius: 16px; overflow: hidden; height: 560px; }
+    .split .img-side img { width: 100%; height: 100%; object-fit: cover; }
+    .stat-block { display: flex; gap: 48px; margin-top: 36px; }
+    .stat-item { text-align: center; }
+    .stat-item .number { font-family: var(--font-display); font-size: 68px; font-weight: 800; color: var(--accent); }
+    .stat-item .label { font-size: 20px; color: rgba(45,55,72,0.6); margin-top: 8px; }
+    .quiz-slide { background: linear-gradient(135deg, #fef9f6 0%, #f9f7f4 100%); }
+    .quiz-slide h2 { color: var(--coral); }
+    .quiz-option { background: var(--card); border-radius: 12px; padding: 18px 28px; margin: 10px 0; font-size: 26px; border: 2px solid var(--border); }
+    .quiz-option span { font-weight: 600; color: var(--accent); margin-right: 16px; }
+    .accent { color: var(--accent); }
+    .coral { color: var(--coral); }
+    .compare-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; margin-top: 28px; }
+    .compare-col { padding: 32px; border-radius: 16px; }
+    .compare-col.fail { background: #fff3f0; border: 2px solid rgba(224,122,95,0.2); }
+    .compare-col.success { background: #f0fafb; border: 2px solid rgba(42,143,158,0.2); }
+    .compare-col h4 { font-family: var(--font-display); font-size: 26px; font-weight: 700; margin-bottom: 14px; }
+    .compare-col.fail h4 { color: var(--coral); }
+    .compare-col.success h4 { color: var(--accent); }
+    .compare-col li { font-size: 22px; line-height: 1.5; color: rgba(45,55,72,0.8); padding: 3px 0; }
+    .process-flow { display: flex; align-items: center; gap: 16px; margin-top: 32px; flex-wrap: wrap; }
+    .process-step { background: var(--card); border: 2px solid var(--border); border-radius: 12px; padding: 20px 28px; text-align: center; flex: 1; min-width: 180px; }
+    .process-step .step-num { font-family: var(--font-display); font-size: 32px; font-weight: 800; color: var(--accent); }
+    .process-step .step-label { font-size: 20px; color: rgba(45,55,72,0.7); margin-top: 8px; }
+    .arrow { font-size: 32px; color: var(--accent); }
+    .speaker-notes { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(45,55,72,0.95); color: #fff; padding: 24px 40px; font-size: 18px; line-height: 1.6; font-family: var(--font-body); max-height: 300px; overflow-y: auto; }
+    .notes-visible .speaker-notes { display: block; }
+  </style>
+</head>
+<body>
+
+<section class="slide title-slide">
+  <span class="eyebrow reveal d1">PROFEL 2 | Week 1, Session 2</span>
+  <h1 class="reveal d2">Digital Transformation<br>Deep Dive</h1>
+  <p class="subtitle reveal d3">Frameworks, Strategies & Real-World Case Studies</p>
+  <p class="meta reveal d4">Cronasia Foundation College, Inc. | Joshua E. Nisnisan</p>
+  <div class="speaker-notes">SCRIPT: "Good morning/afternoon class! Welcome back sa atong second session. Last time, nag-discuss ta about IS fundamentals ug intro sa Digital Transformation. Karon, mag-deep dive na ta. We'll look at DT frameworks, strategies kung unsaon pag-adopt og technology, ug real case studies — both successes AND failures. Exciting ni kay makita nato ang real impact sa DT sa organizations. Did everyone do their homework? We'll share later. Let's begin!"</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Recap & Today's Objectives</span>
+  <h2 class="reveal d2">Where We Left Off & Where We're Going</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card">
+      <h4>Last Session Recap</h4>
+      <p>• IS = 5 components + networks<br>• Evolution: Mainframe → Cloud → AI<br>• DT = fundamental organizational change<br>• 4 Pillars of DT<br>• Philippine DT landscape</p>
+    </div>
+    <div class="card" style="background:linear-gradient(135deg,#f0fafb,#e8f8fa);">
+      <h4>Today's Objectives</h4>
+      <p>• DT Frameworks & Maturity Models<br>• Technology Adoption Strategies<br>• Success & Failure Case Studies<br>• DT Readiness Assessment<br>• Homework Sharing</p>
+    </div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Quick recap sa last session. Na-discuss nato ang 5 components sa IS, ang evolution timeline, Digital Transformation definition ug pillars, ug ang Philippine context. Karon, mas practical ta. We'll look at FRAMEWORKS — paano mag-plan ang organizations for DT. We'll analyze SUCCESS stories ug FAILURE stories. Ug we'll learn how to ASSESS if an organization is ready for DT. Daghan practical insights karon. Let's go."</div>
+</section>
+
+<section class="slide section-header">
+  <span class="section-num reveal d1">01</span>
+  <h1 class="reveal d2">DT Maturity<br>Models</h1>
+  <p class="reveal d3">How organizations measure their digital readiness</p>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Framework</span>
+  <h2 class="reveal d2">What is a DT Maturity Model?</h2>
+  <p class="reveal d3" style="font-size:30px;">A Digital Transformation Maturity Model is a framework that helps organizations assess where they are in their digital journey and what steps to take next.</p>
+  <div class="highlight-box reveal d4">
+    <p><strong class="accent">Think of it like a GPS:</strong> You need to know WHERE you are before you can plan WHERE to go.</p>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Unsa man ang DT Maturity Model? Simply put, it's like a GPS for organizations. Before ka mag-drive, kailangan nimo mahibal-an asa ka karon, diba? Same thing sa DT — you need to assess your current state before planning your digital future. Ang maturity model gives you STAGES — levels nga mo-indicate kung unsa na ka-advanced ang digital transformation sa isa ka organization. From beginner to fully digital."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">5 Stages</span>
+  <h2 class="reveal d2">Digital Maturity Stages</h2>
+  <div class="process-flow reveal d3">
+    <div class="process-step"><div class="step-num">1</div><div class="step-label">Initial/<br>Ad Hoc</div></div>
+    <span class="arrow">→</span>
+    <div class="process-step"><div class="step-num">2</div><div class="step-label">Developing/<br>Emerging</div></div>
+    <span class="arrow">→</span>
+    <div class="process-step"><div class="step-num">3</div><div class="step-label">Defined/<br>Integrated</div></div>
+    <span class="arrow">→</span>
+    <div class="process-step"><div class="step-num">4</div><div class="step-label">Managed/<br>Optimized</div></div>
+    <span class="arrow">→</span>
+    <div class="process-step" style="border-color:var(--accent);background:#f0fafb;"><div class="step-num">5</div><div class="step-label">Transformative/<br>Leading</div></div>
+  </div>
+  <div class="highlight-box reveal d4">
+    <p>Most Philippine SMEs are at <strong class="coral">Stage 1-2</strong>. Large enterprises like BDO, Ayala are at <strong class="accent">Stage 3-4</strong>.</p>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Ang most common maturity model naay 5 stages. Stage 1: Initial or Ad Hoc — wala pay formal digital strategy, reactive lang. Stage 2: Developing — nag-start na og explore digital tools pero dili pa systematic. Stage 3: Defined — naa nay clear strategy ug integration across departments. Stage 4: Managed — optimized na ang digital operations, data-driven decisions. Stage 5: Transformative — fully digital, innovative, leading the industry. Now, honest question: asa ang most Philippine SMEs? Sadly, Stage 1-2 pa. But large companies like BDO, Ayala, Jollibee — mga Stage 3-4 na. Goal: bring more organizations higher."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Assessment Dimensions</span>
+  <h2 class="reveal d2">What Gets Assessed in DT Maturity?</h2>
+  <div class="card-grid cols-3 reveal d3">
+    <div class="card"><h4>Strategy & Leadership</h4><p>Is there a digital vision? Is leadership committed?</p></div>
+    <div class="card"><h4>Technology & Infrastructure</h4><p>Are systems modern, integrated, cloud-ready?</p></div>
+    <div class="card"><h4>People & Culture</h4><p>Are employees digitally skilled? Open to change?</p></div>
+    <div class="card"><h4>Data & Analytics</h4><p>Is data used for decisions? Quality? Governance?</p></div>
+    <div class="card"><h4>Processes & Operations</h4><p>Are processes automated? Digitized? Optimized?</p></div>
+    <div class="card"><h4>Customer Experience</h4><p>Are digital channels used? Personalization? Feedback?</p></div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Kung mag-assess ta og DT maturity, six dimensions ang tan-awon. First, Strategy — naa bay clear digital vision ang leadership? Second, Technology — modern ba ang systems? Cloud-ready? Third, People — ang employees ba, digitally skilled? Open ba sila sa change? Fourth, Data — ginagamit ba ang data for decision-making? Fifth, Processes — automated ba? Digitized? And sixth, Customer Experience — digital channels, personalized services. Kini tanan, interconnected. Dili pwede ang technology lang ang advance pero ang people, dili prepared. Balanced approach gyud."</div>
+</section>
+
+<section class="slide section-header">
+  <span class="section-num reveal d1">02</span>
+  <h1 class="reveal d2">Technology Adoption<br>Strategies</h1>
+  <p class="reveal d3">How organizations decide what to adopt and when</p>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Strategy</span>
+    <h2 class="reveal d2">Big Bang vs. Incremental Approach</h2>
+    <ul class="reveal d3">
+      <li><strong class="coral">Big Bang:</strong> Replace everything at once. High risk, high reward, fast transformation</li>
+      <li><strong class="accent">Incremental:</strong> Step-by-step adoption. Lower risk, slower but more manageable</li>
+      <li><strong>Hybrid:</strong> Big bang for core systems, incremental for peripherals</li>
+    </ul>
+    <div class="highlight-box reveal d4">
+      <p><strong>Best Practice:</strong> Most successful DT projects use the <strong class="accent">incremental approach</strong> with clear milestones.</p>
+    </div>
+  </div>
+  <div class="img-side reveal d3">
+    <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop" alt="Team planning strategy on whiteboard" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "When organizations decide to adopt new technology, naay duha ka main approach. Big Bang — change everything at once. Like kung mag-switch ka from manual to fully automated in one go. High risk ni pero kung successful, fast ang transformation. Then Incremental — step by step, module by module. Lower risk, mas manageable. Most experts recommend incremental approach with clear milestones. Why? Because the failure rate of Big Bang is very high — 70%! Pero kung incremental, you can learn, adjust, ug recover from mistakes. In your career, kung makig-advise mo sa clients, almost always recommend incremental."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Decision Framework</span>
+  <h2 class="reveal d2">How to Choose What Technology to Adopt</h2>
+  <table class="data-table reveal d3">
+    <tr><th>Criteria</th><th>Questions to Ask</th><th>Weight</th></tr>
+    <tr><td><strong>Business Value</strong></td><td>Does it solve a real problem? What's the ROI?</td><td>High</td></tr>
+    <tr><td><strong>Cost & Resources</strong></td><td>Can we afford it? Do we have the people?</td><td>High</td></tr>
+    <tr><td><strong>Integration</strong></td><td>Does it work with existing systems?</td><td>Medium</td></tr>
+    <tr><td><strong>Scalability</strong></td><td>Will it grow with us?</td><td>Medium</td></tr>
+    <tr><td><strong>Security & Compliance</strong></td><td>Is it secure? Does it meet regulations?</td><td>High</td></tr>
+    <tr><td><strong>Vendor Stability</strong></td><td>Will the vendor still exist in 5 years?</td><td>Medium</td></tr>
+  </table>
+  <div class="speaker-notes">SCRIPT: "How do organizations decide WHAT to adopt? Dili lang basta 'trending ni, let's use it.' Naay criteria. First, BUSINESS VALUE — does it actually solve a real problem? What's the return on investment? Second, COST — afford ba nato? Naay tao ba nato nga capable? Third, INTEGRATION — mag-work ba ni with our existing systems or kailangan i-replace tanan? Fourth, SCALABILITY — kung mu-grow ang business, mu-grow pud ba ang tool? Fifth, SECURITY — safe ba? Compliant sa laws? Sixth, VENDOR STABILITY — naa pa ba ni nga company in 5 years? These questions, critical ni for decision-making. As future accountants, you might be involved in these technology investment decisions."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Common Pitfalls</span>
+  <h2 class="reveal d2">Why 70% of DT Projects Fail</h2>
+  <div class="stat-block reveal d3" style="justify-content:center;">
+    <div class="stat-item"><div class="number" style="color:var(--coral);">70%</div><div class="label">of DT initiatives<br>fail to reach goals</div></div>
+    <div class="stat-item"><div class="number">$1.3T</div><div class="label">wasted on failed<br>DT in 2023</div></div>
+  </div>
+  <ul class="reveal d4" style="margin-top:36px;">
+    <li><strong class="coral">Employee resistance</strong> — #1 reason for failure</li>
+    <li><strong class="coral">Lack of clear strategy</strong> — no roadmap, no alignment</li>
+    <li><strong class="coral">Technology-first thinking</strong> — buying tools without solving problems</li>
+    <li><strong class="coral">Poor change management</strong> — no training, no support</li>
+  </ul>
+  <div class="speaker-notes">SCRIPT: "Here's the scary truth class: 70% of Digital Transformation projects FAIL. 70%! Ug 1.3 trillion dollars ang na-waste in 2023 alone because of failed DT. So what goes wrong? Number 1 reason: EMPLOYEE RESISTANCE. People don't want change. Number 2: lack of clear strategy — wala kahibalo asa padulong. Number 3: technology-first thinking — 'Buy this expensive system!' without understanding kung unsa ang problem nga i-solve. Number 4: poor change management — wa gi-train ang tao, wa gi-support. So remember: the tech is the easy part. Ang hard part is ang PEOPLE. This is why DT is not just an IT problem — it's a leadership and culture problem."</div>
+</section>
+
+<section class="slide section-header">
+  <span class="section-num reveal d1">03</span>
+  <h1 class="reveal d2">Case Studies:<br>Success Stories</h1>
+  <p class="reveal d3">Learning from organizations that got it right</p>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Success Case #1</span>
+    <h2 class="reveal d2">Globe Telecom: From Telco to Digital Platform</h2>
+    <ul class="reveal d3">
+      <li><strong>Before:</strong> Traditional telecom, voice & text revenue declining</li>
+      <li><strong>Strategy:</strong> Transform into digital services platform</li>
+      <li><strong>Actions:</strong> GCash, GLife, digital content, fintech</li>
+      <li><strong>Result:</strong> GCash reached 86M+ users, fintech now bigger revenue than traditional telco</li>
+    </ul>
+    <div class="highlight-box reveal d4">
+      <p><strong class="accent">Key Lesson:</strong> Don't cling to your old business model. Create entirely new revenue streams through digital.</p>
+    </div>
+  </div>
+  <div class="img-side reveal d3">
+    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=600&fit=crop" alt="Mobile digital payment" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "Let's start with success stories. Globe Telecom — ang atong local telco giant. Before, revenue nila mostly voice calls ug text. But they saw the writing on the wall — declining ang revenue sa traditional telecom. So what did they do? They transformed into a DIGITAL PLATFORM. They invested in GCash — karon 86 million users na! They created GLife for lifestyle services. Ang fintech revenue nila karon, mas dako pa sa traditional telecom revenue! That's domain transformation in action. Lesson: Don't cling to your old business model. If Globe stayed as a traditional telco, nag-decline na sila. Instead, they reinvented themselves."</div>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Success Case #2</span>
+    <h2 class="reveal d2">BDO: Digital Banking Transformation</h2>
+    <ul class="reveal d3">
+      <li><strong>Challenge:</strong> Millions of unbanked Filipinos, physical branches expensive</li>
+      <li><strong>Solution:</strong> BDO Online & Mobile App, digital onboarding</li>
+      <li><strong>Integration:</strong> Connected to GCash, Maya, merchants</li>
+      <li><strong>Impact:</strong> 10M+ digital users, reduced branch dependence by 40%</li>
+    </ul>
+    <div class="highlight-box reveal d4">
+      <p><strong class="accent">Key Lesson:</strong> Digital channels expand reach without proportional cost increase.</p>
+    </div>
+  </div>
+  <div class="img-side reveal d3">
+    <img src="https://images.unsplash.com/photo-1563986768494-4dee2763ff3f?w=800&h=600&fit=crop" alt="Online banking mobile app" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "Second success story: BDO, largest bank sa Philippines. Their challenge: millions of unbanked Filipinos ug expensive kaayo ang mag-maintain og physical branches. Solution? Invest heavily in BDO Online ug Mobile App. Digital onboarding — pwede na mag-open og account without going to the branch. Nag-integrate sila sa GCash, Maya, merchants. Result? 10 million+ digital users ug 40% less dependence sa physical branches. Lesson: digital channels allow you to serve MORE customers at LOWER cost. For AIS students, this is critical — ang accounting systems ni BDO had to be completely redesigned to support digital operations."</div>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Success Case #3</span>
+    <h2 class="reveal d2">Netflix: The Ultimate DT Success Story</h2>
+    <ul class="reveal d3">
+      <li><strong>1997:</strong> DVD-by-mail service (physical logistics)</li>
+      <li><strong>2007:</strong> Pivoted to streaming (cloud-based)</li>
+      <li><strong>2013:</strong> Started producing original content using DATA</li>
+      <li><strong>2024:</strong> 280M+ subscribers worldwide, AI-driven recommendations</li>
+    </ul>
+    <div class="highlight-box reveal d4">
+      <p><strong class="accent">Key Lesson:</strong> Netflix disrupted THEMSELVES before competitors could. They killed their own cash cow (DVDs) to build something better.</p>
+    </div>
+  </div>
+  <div class="img-side reveal d3">
+    <img src="https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=800&h=600&fit=crop" alt="Streaming service on TV" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "Now, international case — Netflix. In 1997, they were a DVD-by-mail company. Imagine, nagpadala sila og physical DVD sa bahay mo. But they saw the future: streaming. In 2007, nag-pivot sila — invested heavily in cloud infrastructure para mag-stream. Then in 2013, nag-start sila og original content — ug they used DATA analytics to decide kung unsa ang i-produce. House of Cards? Data said it would be a hit. And it was! Karon, 280 million+ subscribers worldwide. The KEY lesson: Netflix disrupted THEMSELVES. They killed their own profitable DVD business BEFORE competitors could kill it for them. That takes courage. That's true DT leadership."</div>
+</section>
+
+<section class="slide section-header">
+  <span class="section-num reveal d1">04</span>
+  <h1 class="reveal d2">Case Studies:<br>Failure Stories</h1>
+  <p class="reveal d3">Learning from organizations that got it wrong</p>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Failure Case #1</span>
+  <h2 class="reveal d2">Kodak: The Camera Giant That Refused to Change</h2>
+  <div class="compare-cols reveal d3">
+    <div class="compare-col fail">
+      <h4>What Went Wrong</h4>
+      <ul style="list-style:none;padding:0;">
+        <li>• Invented digital camera in 1975 but BURIED it</li>
+        <li>• Protected film revenue instead of innovating</li>
+        <li>• Ignored the digital photography revolution</li>
+        <li>• Filed for bankruptcy in 2012</li>
+      </ul>
+    </div>
+    <div class="compare-col success">
+      <h4>What They Should Have Done</h4>
+      <ul style="list-style:none;padding:0;">
+        <li>• Embraced their own invention early</li>
+        <li>• Transitioned from film to digital services</li>
+        <li>• Built digital ecosystem like Apple later did</li>
+        <li>• Disrupted themselves like Netflix</li>
+      </ul>
+    </div>
+  </div>
+  <div class="highlight-box reveal d4">
+    <p><strong class="coral">Lesson:</strong> Protecting your current revenue at the cost of innovation = slow death.</p>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Now, failure stories. Kodak — one of the most painful examples sa business history. Did you know, KODAK invented the digital camera in 1975? YES! They invented it! But what did they do? They BURIED it. Why? Because their profit was in film. Nag-think sila, 'Kung mag-release mi og digital camera, mamatay ang film business namo.' So they hid the technology. Meanwhile, other companies developed digital cameras. By the time Kodak tried to catch up, too late na. 2012, nag-file sila og bankruptcy. The lesson is clear: if you protect your current revenue at the expense of innovation, you will die slowly. Never be afraid to disrupt yourself."</div>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Failure Case #2</span>
+    <h2 class="reveal d2">Nokia: From Mobile King to Irrelevant</h2>
+    <ul class="reveal d3">
+      <li><strong>2007:</strong> Nokia had 50% global market share in mobile phones</li>
+      <li><strong>iPhone launched:</strong> Nokia dismissed it as "niche product"</li>
+      <li><strong>2010:</strong> Still using outdated Symbian OS while Android grew</li>
+      <li><strong>2013:</strong> Sold mobile division to Microsoft for $7.2B</li>
+      <li><strong>CEO's famous words:</strong> "We didn't do anything wrong, but somehow we lost."</li>
+    </ul>
+  </div>
+  <div class="img-side reveal d3">
+    <img src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&h=600&fit=crop" alt="Smartphone in hand" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "Nokia. In 2007, sila ang HARI sa mobile phones — 50% market share worldwide! When iPhone launched in 2007, Nokia dismissed it. 'That's a niche product,' they said. They stuck with Symbian OS while Android exploded. By 2013, forced sila mag-sell sa mobile division nila to Microsoft for $7.2 billion. Ang CEO nag-ingon: 'We didn't do anything wrong, but somehow we lost.' Class, that statement itself shows the problem — they thought doing NOTHING wrong was enough. But in tech, staying still IS going backward. You have to ACTIVELY innovate. Complacency is the enemy of progress."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Failure Case #3</span>
+  <h2 class="reveal d2">Toys "R" Us: E-Commerce Too Late</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card" style="border-left:4px solid var(--coral);">
+      <h4>The Failure</h4>
+      <p>Outsourced e-commerce to Amazon in 2000. When they tried to build their own platform in 2004, it was buggy and slow. Customers already used Amazon. Filed bankruptcy in 2017.</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--accent);">
+      <h4>The Lesson</h4>
+      <p>Never outsource your CORE digital capability to a competitor. If you hand over your customer relationship to another platform, you lose control of your business.</p>
+    </div>
+  </div>
+  <div class="highlight-box reveal d4">
+    <p><strong class="coral">Key Takeaway:</strong> Digital presence is not optional — it's a CORE business function, not something to outsource.</p>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Toys R Us — the biggest toy retailer in the world. In 2000, instead of building their own e-commerce, nag-outsource sila to Amazon. Big mistake. They trained Amazon's customers to buy toys sa Amazon! When they finally tried to build their own platform in 2004, buggy ug slow. Customers already comfortable sa Amazon. By 2017, bankrupt na sila. The lesson: NEVER outsource your core digital capability to a competitor. Your digital presence is a CORE business function. Same sa accounting firms karon — if you don't have digital services, you're at risk. Your competitors who do will take your clients."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Analysis</span>
+  <h2 class="reveal d2">Success vs. Failure: Key Differences</h2>
+  <table class="data-table reveal d3">
+    <tr><th>Factor</th><th style="color:#90EE90;">Successful DT</th><th style="color:#FFB4A2;">Failed DT</th></tr>
+    <tr><td><strong>Leadership</strong></td><td>Committed, digital-first vision</td><td>Resistant, protects status quo</td></tr>
+    <tr><td><strong>Culture</strong></td><td>Embraces experimentation</td><td>Punishes failure, fears change</td></tr>
+    <tr><td><strong>Strategy</strong></td><td>Customer-centric, clear roadmap</td><td>Technology-centric, no plan</td></tr>
+    <tr><td><strong>Speed</strong></td><td>Moves fast, iterates</td><td>Analysis paralysis, too slow</td></tr>
+    <tr><td><strong>Focus</strong></td><td>Solves real problems</td><td>Chases trends blindly</td></tr>
+  </table>
+  <div class="speaker-notes">SCRIPT: "Let's compare. Unsa ang kalahi sa successful vs failed DT? LEADERSHIP — successful ones have committed leaders with digital vision. Failed ones protect the status quo. CULTURE — successful ones embrace experimentation, they allow mistakes. Failed ones punish failure ug fear change. STRATEGY — successful is customer-centric with clear roadmap. Failed is technology-centric without a plan. SPEED — successful move fast and iterate. Failed have analysis paralysis. FOCUS — successful solve real problems. Failed chase trends blindly. Class, remember this table. This will guide you in your future careers when you're involved in DT decisions."</div>
+</section>
+
+<section class="slide section-header">
+  <span class="section-num reveal d1">05</span>
+  <h1 class="reveal d2">DT Readiness<br>Assessment</h1>
+  <p class="reveal d3">Evaluating organizational preparedness for transformation</p>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Assessment Tool</span>
+  <h2 class="reveal d2">DT Readiness Checklist</h2>
+  <table class="data-table reveal d3">
+    <tr><th>Dimension</th><th>Ready ✅</th><th>Not Ready ❌</th></tr>
+    <tr><td><strong>Leadership Buy-in</strong></td><td>C-suite champions DT</td><td>Leaders skeptical or passive</td></tr>
+    <tr><td><strong>Budget Allocated</strong></td><td>Dedicated DT budget exists</td><td>No specific funding</td></tr>
+    <tr><td><strong>Talent Available</strong></td><td>Digital skills in-house or hireable</td><td>No tech talent, no training plan</td></tr>
+    <tr><td><strong>Data Foundation</strong></td><td>Clean, centralized, accessible data</td><td>Siloed, messy, incomplete data</td></tr>
+    <tr><td><strong>Culture Open</strong></td><td>Staff willing to learn & change</td><td>Strong resistance to change</td></tr>
+    <tr><td><strong>Clear Use Case</strong></td><td>Specific problem to solve with DT</td><td>Vague "we need to be digital"</td></tr>
+  </table>
+  <div class="speaker-notes">SCRIPT: "Here's a practical DT readiness checklist. Six dimensions. Leadership buy-in — is the CEO or top management championing this? Budget — naa bay specific DT budget, or just 'bahala na'? Talent — naa bay digital-skilled employees, or at least a plan to train/hire? Data — clean ba ang data ninyo, centralized? Culture — open ba ang staff sa change? And Use Case — naa bay SPECIFIC problem to solve, or vague lang 'kailangan digitalized ta'? If most answers are 'Not Ready,' then start with building the foundation FIRST before buying any technology. This checklist, useful ni for your future proposals."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Framework</span>
+  <h2 class="reveal d2">DT Implementation Roadmap</h2>
+  <div class="process-flow reveal d3">
+    <div class="process-step"><div class="step-num">1</div><div class="step-label">Assess<br>Current State</div></div>
+    <span class="arrow">→</span>
+    <div class="process-step"><div class="step-num">2</div><div class="step-label">Define<br>Vision</div></div>
+    <span class="arrow">→</span>
+    <div class="process-step"><div class="step-num">3</div><div class="step-label">Plan &<br>Prioritize</div></div>
+    <span class="arrow">→</span>
+    <div class="process-step"><div class="step-num">4</div><div class="step-label">Pilot &<br>Test</div></div>
+    <span class="arrow">→</span>
+    <div class="process-step"><div class="step-num">5</div><div class="step-label">Scale &<br>Optimize</div></div>
+  </div>
+  <div class="card-grid cols-2 reveal d4" style="margin-top:36px;">
+    <div class="card">
+      <h4>Phase 1-2 (Months 1-3)</h4>
+      <p>Assessment, stakeholder interviews, vision workshops, strategy document</p>
+    </div>
+    <div class="card">
+      <h4>Phase 3-5 (Months 4-12+)</h4>
+      <p>Prioritize projects, run pilots, measure results, scale what works</p>
+    </div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Karon, practical roadmap for implementing DT. Five phases. Phase 1: ASSESS — asa ka karon? Use the maturity model ug readiness checklist. Phase 2: DEFINE VISION — asa ka gusto makabot? What does success look like? Phase 3: PLAN & PRIORITIZE — unsa ang una himuon? You can't do everything at once. Phase 4: PILOT & TEST — try small first. Pick one department, one process, test the technology. Phase 5: SCALE & OPTIMIZE — if successful ang pilot, roll out to the whole organization ug continuously improve. Timeline? Assessment takes 1-3 months. Implementation takes 4-12 months or more. This is not overnight work — patience ug persistence ang key."</div>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Change Management</span>
+    <h2 class="reveal d2">Managing Resistance to Change</h2>
+    <ul class="reveal d3">
+      <li><strong class="accent">Communicate WHY:</strong> People resist what they don't understand</li>
+      <li><strong class="accent">Involve employees early:</strong> Co-creation reduces resistance</li>
+      <li><strong class="accent">Train extensively:</strong> Fear comes from lack of skills</li>
+      <li><strong class="accent">Celebrate wins:</strong> Show progress, reward adoption</li>
+      <li><strong class="accent">Support continuously:</strong> Help desk, champions, feedback loops</li>
+    </ul>
+  </div>
+  <div class="img-side reveal d4">
+    <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop" alt="Team collaboration workshop" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "Since resistance is the #1 killer of DT, let's talk about managing it. Five strategies. First, COMMUNICATE WHY — explain to employees why we're changing. People resist what they don't understand. 'Kini para sa improvement, dili para tangtangon ka sa trabaho.' Second, INVOLVE EMPLOYEES EARLY — ask their input, make them part of the solution. Third, TRAIN EXTENSIVELY — most resistance comes from fear of 'dili ko kahibalo mag-gamit ani.' Give them training. Fourth, CELEBRATE WINS — when something works, announce it! Reward early adopters. Fifth, SUPPORT CONTINUOUSLY — have a help desk, digital champions in each department, feedback loops. These strategies, critical for any DT initiative."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Philippine Context</span>
+  <h2 class="reveal d2">DT Challenges in Philippine Organizations</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card" style="border-left:4px solid var(--coral);">
+      <h4>Common Challenges</h4>
+      <p>• Limited IT budget (especially SMEs)<br>• Digital skills gap in workforce<br>• Internet connectivity issues in provinces<br>• Preference for traditional/paper processes<br>• Regulatory uncertainty (new tech laws)</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--accent);">
+      <h4>Opportunities</h4>
+      <p>• Young, tech-savvy population (median age 25)<br>• Growing fintech ecosystem<br>• Government push (e-Gov, DICT programs)<br>• BPO industry expertise<br>• Mobile-first market (high smartphone penetration)</p>
+    </div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Specifically sa Philippines, unsa ang challenges? Limited budget — especially SMEs, dili nila afford mahal nga systems. Digital skills gap — daghan pa ang dili tech-literate sa workforce. Internet connectivity — lahi ang experience sa Manila vs provinces. Preference for paper — 'mas safe og physical.' Regulatory uncertainty — new laws about data privacy, e-commerce, still evolving. BUT there are huge OPPORTUNITIES! Young population — median age 25, tech-savvy. Growing fintech. Government pushing e-Gov. BPO expertise — we have world-class IT talent. Mobile-first — almost everyone has a smartphone. So ang future sa Philippine DT, bright. Ang question is SPEED — how fast can we close the gap?"</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Activity</span>
+  <h2 class="reveal d2">Class Discussion: Homework Sharing</h2>
+  <p class="reveal d3" style="font-size:28px;">Share your research on a company that underwent Digital Transformation.</p>
+  <div class="card-grid cols-3 reveal d4">
+    <div class="card" style="text-align:center;">
+      <h4>Company Name</h4>
+      <p>What company did you research?</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <h4>What Changed?</h4>
+      <p>What specific digital changes did they make?</p>
+    </div>
+    <div class="card" style="text-align:center;">
+      <h4>The Result</h4>
+      <p>Was it successful? What was the impact?</p>
+    </div>
+  </div>
+  <div class="highlight-box reveal d5">
+    <p><strong>Discussion Format:</strong> 2 minutes per student. Stand up, share your company, changes, and results. Class can ask 1 question.</p>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Okay class, sharing time! Last session nag-assign ko og homework — research one company nga nag-undergo og DT. Karon, magshare ta. Format: 2 minutes each. Stand up, tell us: what company, what changed, and what happened. After each share, the class can ask one question. This is good practice for your future presentations. Who wants to go first? Raise your hand! Don't be shy — we're all learning here. Let's hear some good examples."</div>
+</section>
+
+<section class="slide content-slide" style="align-items:center; text-align:center;">
+  <span class="eyebrow reveal d1">Reflection</span>
+  <h2 class="reveal d2">Critical Thinking Questions</h2>
+  <div style="max-width:1000px; margin:0 auto;">
+    <ul class="reveal d3" style="text-align:left;">
+      <li>If you were the CEO of Kodak in 2000, what would you have done differently?</li>
+      <li>Why is cultural transformation often harder than technological transformation?</li>
+      <li>Can a small Philippine business (sari-sari store level) undergo DT? How?</li>
+      <li>As a future accountant, how will DT affect YOUR job in 5-10 years?</li>
+    </ul>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Before we end, let's do some critical thinking. I want you to reflect on these questions — you don't have to answer aloud, just think deeply. First: if you were Kodak CEO in 2000, unsa ang imo buhaton differently? Second: why is cultural change harder than tech change? Third: can even a sari-sari store undergo DT? Think about it — GCash payments, inventory tracking via phone, online ordering through FB Messenger. That IS DT! Fourth: as future accountants, how will DT affect YOUR job? Will robots replace you? Or will you become MORE valuable? Hint: the answer depends on whether you upskill or not."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Summary</span>
+  <h2 class="reveal d2">Session 2: Key Takeaways</h2>
+  <ul>
+    <li class="step"><strong class="accent">1.</strong> DT Maturity Models help organizations assess their digital readiness (5 stages)</li>
+    <li class="step"><strong class="accent">2.</strong> Incremental approach is safer; evaluate tech using business value, cost, integration, security</li>
+    <li class="step"><strong class="accent">3.</strong> 70% of DT fails — #1 reason is people resistance, not technology problems</li>
+    <li class="step"><strong class="accent">4.</strong> Success = Leadership + Culture + Strategy + Speed (Netflix, Globe, BDO)</li>
+    <li class="step"><strong class="accent">5.</strong> Failure = Complacency + Protection of status quo (Kodak, Nokia, Toys R Us)</li>
+  </ul>
+  <div class="speaker-notes">SCRIPT: "Alright, let's wrap up with key takeaways. One, maturity models help assess readiness — 5 stages gikan Initial to Transformative. Two, incremental approach is safer, evaluate tech carefully. Three, 70% fail because of PEOPLE, not technology. Four, success formula: committed leadership, open culture, clear strategy, speed. Five, failure formula: complacency, protecting the old way. These lessons, i-apply ninyo not just sa exams but in your future careers. The world needs more tech-savvy accountants. That's you."</div>
+</section>
+
+<section class="slide quiz-slide">
+  <span class="eyebrow reveal d1">Session 2 Quiz</span>
+  <h2 class="reveal d2">Quick Check: 5-Item Quiz</h2>
+  <p class="reveal d3" style="font-size:26px; margin-bottom:20px;">Answer on ¼ sheet of paper. 10 minutes.</p>
+  <div class="reveal d4">
+    <div class="quiz-option"><span>1.</span> Name the 5 stages of Digital Maturity.</div>
+    <div class="quiz-option"><span>2.</span> What is the #1 reason DT projects fail? Explain briefly.</div>
+    <div class="quiz-option"><span>3.</span> Compare Big Bang vs. Incremental approach (2-3 differences).</div>
+    <div class="quiz-option"><span>4.</span> Give one DT success story & one failure story. What was the key lesson from each?</div>
+    <div class="quiz-option"><span>5.</span> List 3 criteria organizations should use when deciding what technology to adopt.</div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Quiz time! 5 items, quarter sheet. Number 1: name the 5 stages of Digital Maturity. Number 2: what's the number 1 reason DT fails? Explain. Number 3: compare Big Bang vs Incremental, give 2-3 differences. Number 4: give one success ug one failure story, with key lesson each. Number 5: list 3 criteria for technology adoption decisions. You have 10 minutes. Go! Ug no cheating ha — academic integrity."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Answer Key</span>
+  <h2 class="reveal d2">Session 2 Quiz: Answers</h2>
+  <ul style="font-size:24px;">
+    <li class="step"><strong>1.</strong> Initial/Ad Hoc → Developing → Defined → Managed → Transformative<br><em style="color:var(--accent);font-size:20px;">Rationale: Progressive stages from no digital strategy to industry-leading digital maturity</em></li>
+    <li class="step"><strong>2.</strong> Employee/People Resistance — people fear change, lack skills, feel threatened<br><em style="color:var(--accent);font-size:20px;">Rationale: Technology itself rarely fails; it's adoption and cultural acceptance that fail</em></li>
+    <li class="step"><strong>3.</strong> Big Bang = all at once, high risk, fast. Incremental = step-by-step, lower risk, slower<br><em style="color:var(--accent);font-size:20px;">Rationale: Understanding trade-offs helps in planning appropriate DT approach</em></li>
+    <li class="step"><strong>4.</strong> Success: Netflix/Globe/BDO (embraced change). Failure: Kodak/Nokia (resisted change)<br><em style="color:var(--accent);font-size:20px;">Rationale: Real examples illustrate principles of proactive vs reactive approaches</em></li>
+    <li class="step"><strong>5.</strong> Any 3 of: Business Value/ROI, Cost, Integration, Scalability, Security, Vendor Stability<br><em style="color:var(--accent);font-size:20px;">Rationale: Systematic evaluation prevents impulsive technology purchases</em></li>
+  </ul>
+  <div class="speaker-notes">SCRIPT: "Let's check answers. Number 1: Initial, Developing, Defined, Managed, Transformative. Number 2: Employee resistance — people, not technology, cause failure. Number 3: Big Bang is all-at-once, high risk, fast. Incremental is step-by-step, lower risk. Number 4: Accept any valid success (Netflix, Globe, BDO) ug failure (Kodak, Nokia, Toys R Us) with correct lessons. Number 5: any 3 from our criteria table — business value, cost, integration, scalability, security, vendor stability. Score yourselves honestly!"</div>
+</section>
+
+<section class="slide content-slide" style="align-items:center; text-align:center;">
+  <span class="eyebrow reveal d1">Next Session</span>
+  <h2 class="reveal d2">Week 2, Session 1 Preview:<br><span class="accent">Platform Business & Technology Adoption in Practice</span></h2>
+  <p class="reveal d3" style="font-size:28px; max-width:900px;">We'll explore platform economy models (Grab, Airbnb, Shopee) in depth, analyze technology adoption life cycles, and evaluate how IS trends specifically impact the accounting profession.</p>
+  <div class="highlight-box reveal d4" style="max-width:700px;">
+    <p><strong>Homework:</strong> Download and explore ONE free SaaS tool (Google Workspace, Canva, Trello, or Notion). Be ready to share: what it does, how it works, and how a business could use it.</p>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Next session, we'll explore platform business models deeper — how Grab, Shopee, Airbnb make money without owning assets. We'll also look at how IS trends specifically affect accountants. Homework: download ONE free SaaS tool — Google Workspace, Canva, Trello, or Notion. Try it out. Be ready to share what it does ug how a business could use it. This is hands-on exploration! Alright class, great session today. See you next time! God bless."</div>
+</section>
+
+<section class="slide title-slide">
+  <span class="eyebrow reveal d1">End of Session</span>
+  <h1 class="reveal d2" style="font-size:68px;">Thank You!<br><span style="font-size:44px; color:var(--accent);">See You Next Session</span></h1>
+  <p class="meta reveal d3">PROFEL 2 | Week 1, Session 2</p>
+  <p class="meta reveal d4">Joshua E. Nisnisan | Cronasia Foundation College</p>
+  <div class="speaker-notes">SCRIPT: "Thank you class! Good job today. Remember your homework — explore a SaaS tool. Stay curious, keep learning. Serve to Thrive! See you next time."</div>
+</section>
+
+<script>
+document.addEventListener('keydown', (e) => { if (e.key === 'n' || e.key === 'N') document.body.classList.toggle('notes-visible'); });
+</script>
+</body>
+</html>

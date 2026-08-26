@@ -1,0 +1,1850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- skill:chassis -->
+<style>
+/* =====================================================
+   PRESENTATION CHASSIS — style-invariant base styles
+   Fixed 1920×1080 canvas scaled to fit any viewport.
+   Customize colors, fonts, and chrome via :root tokens.
+   ===================================================== */
+
+/* ---------- Universal reset ---------- */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ---------- Theme tokens (override in your deck's CSS) ---------- */
+:root {
+    color-scheme: light;
+
+    --background:      #ffffff;
+    --foreground:      #111111;
+    --card:            #f5f5f5;
+    --card-foreground: var(--foreground);
+    --accent:          #c94a3d;
+    --accent-foreground: #ffffff;
+
+    --muted-foreground: color-mix(in srgb, var(--foreground) 55%, transparent);
+    --border:           color-mix(in srgb, var(--foreground) 12%, transparent);
+
+    --font-display: Georgia, serif;
+    --font-body: -apple-system, system-ui, sans-serif;
+    --font-mono: ui-monospace, monospace;
+
+    /* Reveal animation */
+    --reveal-duration: 0.8s;
+    --reveal-ease:     cubic-bezier(0.16, 1, 0.3, 1);
+    --reveal-distance: 28px;
+
+    /* Chrome (nav dots, keyboard hint) */
+    --nav-dot-size: 9px;
+    --nav-dot-radius: 50%;
+    --nav-dot-color: var(--foreground);
+    --nav-dot-active-color: var(--accent);
+    --nav-dot-opacity: 0.4;
+}
+
+/* ---------- Viewport lock + scroll snap ---------- */
+html, body { height: 100%; overflow-x: hidden; }
+html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
+
+html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+/* ---------- Type scale ----------
+   Fixed px sizes on a 1920×1080 canvas. The canvas is scaled to fit
+   any viewport via transform, so these sizes are absolute within the
+   design surface — no responsive units needed. */
+body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+    font-size: 36px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1 { font-size: 120px; line-height: 1.05; letter-spacing: -0.02em; }
+h2 { font-size: 64px; line-height: 1.1; letter-spacing: -0.01em; }
+h3 { font-size: 44px; line-height: 1.2; }
+.eyebrow {
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.3;
+}
+
+ul, ol { padding-left: 48px; display: flex; flex-direction: column; gap: 24px; }
+li::marker { color: var(--accent); }
+
+/* ---------- Slide structure ----------
+   .slide is the authored 1920×1080 artboard.
+   The chassis wraps it in viewport + scale layers at runtime. */
+.slide-viewport {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: block;
+    position: relative;
+    background: var(--background);
+    isolation: isolate;
+    z-index: 1;
+}
+
+.slide-scale {
+    width: 1920px;
+    height: 1080px;
+    transform: translate(-50%, -50%) scale(var(--slide-scale, 1));
+    transform-origin: center center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+}
+
+.slide {
+    width: 1920px;
+    height: 1080px;
+    padding: 80px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 60px;
+    position: relative;
+    background: transparent;
+}
+
+
+/* ---------- Image defaults ---------- */
+img, .image-container {
+    max-width: 100%;
+    max-height: 540px;
+    object-fit: contain;
+}
+
+/* ---------- Reveal primitives ----------
+   Driven by chassis.js via the Web Animations API, not CSS transitions.
+   Put .reveal* or .step on ANY element — author CSS on the same element
+   (opacity, transform, transition, filter) never conflicts, because
+   WAAPI animations live in the animation cascade origin and win over
+   normal author declarations. The .dN stagger classes below still apply
+   to theme-authored CSS animations via animation-delay.
+
+   Variants: .reveal (fade + up), .reveal-left, .reveal-right,
+   .reveal-scale, .reveal-blur. .step stays hidden until the user
+   advances forward. Don't combine .step with .reveal* on the same
+   element. */
+
+/* FOUC guard: hide reveals until chassis.js marks the document ready. */
+:root:not(.reveals-ready) .reveal,
+:root:not(.reveals-ready) .reveal-left,
+:root:not(.reveals-ready) .reveal-right,
+:root:not(.reveals-ready) .reveal-scale,
+:root:not(.reveals-ready) .reveal-blur,
+:root:not(.reveals-ready) .step {
+    opacity: 0;
+}
+:root:not(.reveals-ready) .reveal-blur { filter: blur(10px); }
+
+/* ---------- Stagger delays (.d1 … .d8) ---------- */
+.slide.visible .d1 { transition-delay: 0.10s; animation-delay: 0.10s; }
+.slide.visible .d2 { transition-delay: 0.25s; animation-delay: 0.25s; }
+.slide.visible .d3 { transition-delay: 0.40s; animation-delay: 0.40s; }
+.slide.visible .d4 { transition-delay: 0.55s; animation-delay: 0.55s; }
+.slide.visible .d5 { transition-delay: 0.70s; animation-delay: 0.70s; }
+.slide.visible .d6 { transition-delay: 0.85s; animation-delay: 0.85s; }
+.slide.visible .d7 { transition-delay: 1.00s; animation-delay: 1.00s; }
+.slide.visible .d8 { transition-delay: 1.15s; animation-delay: 1.15s; }
+
+/* ---------- Nav dots ----------
+   Default: right-center (vertical stack on right edge).
+   Override with <body data-nav="bottom | top-right | hidden">. */
+.nav-dots {
+    position: fixed;
+    right: clamp(0.6rem, 1.5vw, 1.4rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1vh, 0.8rem);
+    z-index: 50;
+}
+
+body[data-nav="bottom"] .nav-dots {
+    right: auto;
+    top: auto;
+    bottom: clamp(1rem, 2.5vh, 2rem);
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+}
+
+body[data-nav="top-right"] .nav-dots {
+    right: clamp(1rem, 2.5vw, 2rem);
+    top: clamp(1rem, 2.5vh, 2rem);
+    transform: none;
+    flex-direction: row;
+}
+
+body[data-nav="hidden"] .nav-dots { display: none; }
+
+body[data-nav="bottom"] .keyboard-hint {
+    left: clamp(1rem, 2vw, 1.5rem);
+    transform: none;
+}
+
+.nav-dots button {
+    width: var(--nav-dot-size);
+    height: var(--nav-dot-size);
+    border-radius: var(--nav-dot-radius);
+    border: 1.5px solid var(--nav-dot-color);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+    opacity: var(--nav-dot-opacity);
+}
+.nav-dots button:hover { opacity: 0.85; transform: scale(1.15); }
+.nav-dots button:focus-visible {
+    outline: 2px solid var(--nav-dot-active-color);
+    outline-offset: 3px;
+    opacity: 1;
+}
+.nav-dots button.active {
+    background: var(--nav-dot-active-color);
+    border-color: var(--nav-dot-active-color);
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+/* ---------- Keyboard hint ---------- */
+.keyboard-hint {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.2vh, 1rem);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--muted-foreground);
+    z-index: 50;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.keyboard-hint kbd {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.9em;
+    padding: 0.05em 0.4em;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--background);
+    margin: 0 0.15em;
+}
+
+/* ---------- Credit line ---------- */
+.chassis-credit {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.2vh, 1rem);
+    left: clamp(1rem, 2vw, 1.5rem);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.02em;
+    z-index: 50;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.chassis-credit .chassis-credit-emoji {
+    font-style: normal;
+    margin: 0 0.15em;
+}
+
+body[data-nav="bottom"] .chassis-credit {
+    left: auto;
+    right: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* ---------- Custom cursor ---------- */
+.chassis-cursor {
+    position: fixed;
+    top: 0; left: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: var(--accent);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    will-change: transform;
+}
+.chassis-cursor.visible { opacity: 1; }
+body.artifact-editor-editing .chassis-cursor { display: none; }
+
+@media (hover: none) {
+    .chassis-cursor { display: none; }
+}
+
+body.chassis-cursor-active:not(.artifact-editor-editing),
+body.chassis-cursor-active:not(.artifact-editor-editing) * { cursor: none; }
+
+/* ---------- Opt-outs ---------- */
+body[data-no-chrome] .nav-dots,
+body[data-no-chrome] .keyboard-hint,
+body[data-no-chrome] .chassis-credit,
+body[data-no-chrome] .chassis-cursor,
+body[data-no-chrome] .artifact-editor-toggle { display: none; }
+
+:fullscreen .keyboard-hint,
+:fullscreen .chassis-credit,
+:fullscreen .artifact-editor-toggle { display: none; }
+
+@media (hover: none) {
+    .keyboard-hint,
+    .chassis-credit { display: none; }
+}
+
+@media (max-width: 900px), (max-height: 560px) {
+    .nav-dots,
+    .keyboard-hint,
+    .chassis-credit,
+    .chassis-cursor { display: none; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.2s !important;
+    }
+    html { scroll-behavior: auto; }
+}
+
+/* ---------- Print (PDF export) ---------- */
+@media print {
+    .nav-dots, .keyboard-hint, .chassis-credit, .chassis-cursor { display: none !important; }
+    html, body { height: auto; overflow: visible; }
+    html { scroll-snap-type: none; }
+    .slide-viewport {
+        page-break-after: always;
+        break-after: page;
+        height: 100vh;
+    }
+    .slide-scale {
+        position: static !important;
+        transform: none !important;
+        width: 100% !important;
+        height: auto !important;
+    }
+    .slide {
+        width: 100% !important;
+        height: auto !important;
+    }
+}
+
+</style>
+<script>
+/* =====================================================
+   PRESENTATION CHASSIS — slide controller
+   Auto-initializes on DOMContentLoaded.
+   Exposes window.slides for programmatic control.
+   ===================================================== */
+(function () {
+    'use strict';
+
+    const REVEAL_SELECTOR = '.reveal, .reveal-left, .reveal-right, .reveal-scale, .reveal-blur';
+    const STEP_SELECTOR = '.step';
+    const ALL_REVEAL_SELECTOR = REVEAL_SELECTOR + ', ' + STEP_SELECTOR;
+    const VIEWPORT_CLASS = 'slide-viewport';
+    const SCALE_CLASS = 'slide-scale';
+
+    function _detectLang() {
+        const param = new URLSearchParams(location.search).get('lang');
+        return (param || navigator.language || 'en').slice(0, 2).toLowerCase();
+    }
+
+    class SlidePresentation {
+        constructor() {
+            this.slides = Array.from(document.querySelectorAll('.slide'));
+            if (this.slides.length === 0) return;
+
+            // Ensure every slide has an id so hashes + anchor links work.
+            // Author-defined ids are preserved; the rest get slide-N (1-indexed).
+            this.slides.forEach((slide, idx) => {
+                if (!slide.id) slide.id = `slide-${idx + 1}`;
+            });
+            this.viewports = this._setupViewports();
+            this.scales = this.viewports.map((viewport) => viewport.querySelector(`.${SCALE_CLASS}`));
+
+            // Hide every reveal element BEFORE lifting the CSS FOUC guard.
+            // After this, .reveals-ready is on <html>, so CSS no longer hides
+            // reveals — inline styles keep them hidden until JS animates them.
+            this._setupReveals();
+
+            this.navDotsContainer = this._ensureNavDots();
+            this.keyboardHint = this._ensureKeyboardHint();
+            this.credit = this._ensureCredit();
+
+            this._setupCanvasScale();
+            this._setupIntersectionObserver();
+            this._setupKeyboardNav();
+            this._setupWheelNav();
+            this._setupTouchNav();
+            this._setupViewportSync();
+            this._buildNavDots();
+            this._setupHashNav();
+            this._setupCursor();
+            this._setupPrintSettling();
+
+            // If URL has a matching hash, start there; otherwise start at slide 0.
+            const initial = this._slideIndexFromHash(location.hash);
+            this.currentSlide = initial >= 0 ? initial : 0;
+            if (this.currentSlide !== 0) {
+                this._scrollToSlide(this.currentSlide, 'auto');
+            }
+            // Reveal initial slide immediately (observer may miss it on load).
+            const first = this.slides[this.currentSlide];
+            first.classList.add('visible');
+            this._playSlideReveals(first);
+            this._updateNavDots();
+        }
+
+        /* ---------- Viewport scaffolding ----------
+           Authors write .slide as the 1920×1080 artboard. The chassis wraps
+           that authored section in viewport and scale layers. */
+        _setupViewports() {
+            return this.slides.map((slide) => {
+                const existingScale = slide.parentElement?.classList.contains(SCALE_CLASS)
+                    ? slide.parentElement
+                    : null;
+                const existingViewport = existingScale?.parentElement?.classList.contains(VIEWPORT_CLASS)
+                    ? existingScale.parentElement
+                    : null;
+                if (existingViewport) {
+                    this._syncViewportBackground(slide, existingViewport);
+                    return existingViewport;
+                }
+
+                const viewport = document.createElement('div');
+                viewport.className = VIEWPORT_CLASS;
+                const scale = document.createElement('div');
+                scale.className = SCALE_CLASS;
+
+                slide.parentNode.insertBefore(viewport, slide);
+                viewport.appendChild(scale);
+                scale.appendChild(slide);
+                this._syncViewportBackground(slide, viewport);
+
+                return viewport;
+            });
+        }
+
+        _syncViewportBackground(slide, viewport) {
+            const style = getComputedStyle(slide);
+            const hasBackgroundImage = style.backgroundImage && style.backgroundImage !== 'none';
+            const hasBackgroundColor = !['rgba(0, 0, 0, 0)', 'transparent'].includes(style.backgroundColor);
+            if (hasBackgroundImage || hasBackgroundColor) {
+                viewport.style.background = style.background;
+            } else {
+                viewport.style.background = '';
+            }
+            slide.style.background = 'transparent';
+        }
+
+        /* ---------- DOM scaffolding (auto-inserted if missing) ---------- */
+        _ensureNavDots() {
+            let el = document.getElementById('navDots');
+            if (!el) {
+                el = document.createElement('nav');
+                el.id = 'navDots';
+                el.className = 'nav-dots';
+                el.setAttribute('aria-label', 'Slide navigation');
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        _ensureKeyboardHint() {
+            let el = document.querySelector('.keyboard-hint');
+            if (!el) {
+                const i18n = {
+                    en: { navigate: 'navigate', restart: 'restart', fullscreen: 'fullscreen' },
+                    es: { navigate: 'navegar',   restart: 'inicio',   fullscreen: 'fullscreen' },
+                    fr: { navigate: 'naviguer',  restart: 'début',    fullscreen: 'fullscreen' },
+                    de: { navigate: 'blättern',  restart: 'anfang',   fullscreen: 'vollbild' },
+                    pt: { navigate: 'navegar',   restart: 'início',   fullscreen: 'fullscreen' },
+                    ja: { navigate: '移動',      restart: '先頭',      fullscreen: '全画面' },
+                    ko: { navigate: '이동',      restart: '처음',      fullscreen: '전체화면' },
+                    zh: { navigate: '翻页',      restart: '重置',      fullscreen: '全屏' },
+                    it: { navigate: 'navigare',  restart: 'inizio',   fullscreen: 'fullscreen' },
+                    nl: { navigate: 'bladeren',  restart: 'begin',    fullscreen: 'vollscherm' },
+                };
+                const t = i18n[_detectLang()] || i18n.en;
+                el = document.createElement('div');
+                el.className = 'keyboard-hint';
+                el.innerHTML = `<kbd>←</kbd> <kbd>→</kbd> ${t.navigate} &middot; <kbd>R</kbd> ${t.restart} &middot; <kbd>F</kbd> ${t.fullscreen}`;
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        _ensureCredit() {
+            let el = document.querySelector('.chassis-credit');
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'chassis-credit';
+                el.setAttribute('aria-hidden', 'true');
+                el.innerHTML = '💜 by ClickUp Brain';
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        /* ---------- Reveal engine ----------
+           Reveals are driven by the Web Animations API instead of CSS
+           transitions. This lets authors put .reveal* / .step on any
+           element: animation values live in the animation cascade origin
+           and win over normal author declarations, so no wrapper element
+           is required to isolate the chassis from author CSS.
+
+           State per slide:
+           - "hidden":  inline opacity/transform/filter from the 'from'
+                        keyframe of the variant. Set on init and on
+                        forward re-entry.
+           - "played":  animation is running or has run; the class
+                        `reveals-played` on the slide makes playback
+                        idempotent so observer re-fires (resize,
+                        fullscreen) don't restart the animation.
+           - "settled": animation canceled, inline styles cleared. Used
+                        for backward entries (we skip the animation and
+                        show the final state instantly) and for print. */
+
+        _setupReveals() {
+            // Lift the CSS FOUC guard first so getComputedStyle reads each
+            // element's natural opacity, not the guard's blanket opacity: 0.
+            // No paint occurs mid-task — inline hidden styles are applied
+            // before the browser yields, so there is no visible flash.
+            document.documentElement.classList.add('reveals-ready');
+            this.slides.forEach((slide) => {
+                slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                    el._targetOpacity = parseFloat(getComputedStyle(el).opacity);
+                    this._applyHiddenStyle(el);
+                });
+            });
+        }
+
+        _setupPrintSettling() {
+            // Browsers snapshot the document for print/PDF export. WAAPI
+            // animations don't necessarily complete in that snapshot, so
+            // settle every slide to its final state first. After printing,
+            // reset — but only for slides that haven't already been viewed,
+            // so the audience experience picks up where it left off.
+            window.addEventListener('beforeprint', () => {
+                this.slides.forEach((slide) => this._settleSlide(slide));
+            });
+        }
+
+        _readTokens() {
+            const cs = getComputedStyle(document.documentElement);
+            const rawDuration = parseFloat(cs.getPropertyValue('--reveal-duration'));
+            const duration = Number.isFinite(rawDuration) ? rawDuration * 1000 : 800;
+            const ease = cs.getPropertyValue('--reveal-ease').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
+            const distance = cs.getPropertyValue('--reveal-distance').trim() || '28px';
+            const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            return {
+                duration: reducedMotion ? 1 : duration,
+                ease,
+                distance,
+            };
+        }
+
+        _getRevealDelay(el) {
+            // Use getAttribute('class') rather than el.className: on SVG
+            // elements, `.className` is an SVGAnimatedString (not a string)
+            // and calling .match on it throws. getAttribute is uniform
+            // across HTML and SVG.
+            const classes = el.getAttribute('class') || '';
+            const m = classes.match(/\bd([1-8])\b/);
+            if (!m) return 0;
+            // Matches CSS .dN: d1 = 100ms, d2 = 250ms, +150ms per step.
+            return 100 + (parseInt(m[1], 10) - 1) * 150;
+        }
+
+        _getRevealKeyframes(el, distance) {
+            const to = el._targetOpacity ?? 1;
+            if (el.classList.contains('reveal-left')) {
+                return [
+                    { opacity: 0, transform: `translateX(calc(-1 * ${distance}))` },
+                    { opacity: to, transform: 'translateX(0)' },
+                ];
+            }
+            if (el.classList.contains('reveal-right')) {
+                return [
+                    { opacity: 0, transform: `translateX(${distance})` },
+                    { opacity: to, transform: 'translateX(0)' },
+                ];
+            }
+            if (el.classList.contains('reveal-scale')) {
+                return [
+                    { opacity: 0, transform: 'scale(0.88)' },
+                    { opacity: to, transform: 'scale(1)' },
+                ];
+            }
+            if (el.classList.contains('reveal-blur')) {
+                return [
+                    { opacity: 0, filter: 'blur(10px)' },
+                    { opacity: to, filter: 'blur(0)' },
+                ];
+            }
+            // Default: .reveal or .step (slide up + fade)
+            return [
+                { opacity: 0, transform: `translateY(${distance})` },
+                { opacity: to, transform: 'translateY(0)' },
+            ];
+        }
+
+        _applyHiddenStyle(el) {
+            const { distance } = this._readTokens();
+            const from = this._getRevealKeyframes(el, distance)[0];
+            if ('opacity' in from) el.style.opacity = from.opacity;
+            if ('transform' in from) el.style.transform = from.transform;
+            if ('filter' in from) el.style.filter = from.filter;
+        }
+
+        _clearHiddenStyle(el) {
+            el.style.opacity = '';
+            el.style.transform = '';
+            el.style.filter = '';
+        }
+
+        _cancelReveal(el) {
+            if (el._revealAnim) {
+                el._revealAnim.cancel();
+                el._revealAnim = null;
+            }
+        }
+
+        _playReveal(el, delayOverride) {
+            this._cancelReveal(el);
+            const { duration, ease, distance } = this._readTokens();
+            const delay = typeof delayOverride === 'number' ? delayOverride : this._getRevealDelay(el);
+            const keyframes = this._getRevealKeyframes(el, distance);
+            // fill: 'backwards' applies the 'from' keyframe during the
+            // stagger delay so the element stays hidden until its turn,
+            // without pinning the 'to' keyframe after the animation ends.
+            // This lets co-existing author CSS (e.g. a `.pulse` CSS
+            // animation on the same element) take over naturally once the
+            // entrance completes — otherwise our fill would mask anything
+            // the author wanted to happen post-reveal.
+            const anim = el.animate(keyframes, {
+                duration,
+                delay,
+                easing: ease,
+                fill: 'backwards',
+            });
+            el._revealAnim = anim;
+            // Safe to clear inline 'from' styles now — the animation's
+            // backwards-fill holds the element at the 'from' keyframe for
+            // the duration of any stagger delay.
+            this._clearHiddenStyle(el);
+        }
+
+        _playSlideReveals(slide) {
+            if (slide.classList.contains('reveals-played')) return;
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(REVEAL_SELECTOR).forEach((el) => this._playReveal(el));
+            // .step elements stay hidden until the user advances.
+        }
+
+        _resetSlideReveals(slide) {
+            // Forward re-entry: cancel in-flight animations, re-hide
+            // everything, and reset step state so the slide replays cleanly
+            // when the observer next adds .visible.
+            slide.classList.remove('reveals-played');
+            slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._applyHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step.step-shown').forEach((el) => el.classList.remove('step-shown'));
+        }
+
+        _settleSlide(slide) {
+            // Print / PDF export: jump to the final state with everything
+            // shown, so every step appears in the exported document.
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._clearHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step').forEach((el) => el.classList.add('step-shown'));
+        }
+
+        _rewindSlide(slide) {
+            // Backward re-entry: show reveals instantly (no replay — the
+            // viewer already saw the intro) but hide every step, so the
+            // slide is positioned at the start of its stepped content and
+            // can be stepped through again.
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._clearHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step').forEach((el) => {
+                el.classList.remove('step-shown');
+                this._cancelReveal(el);
+                this._applyHiddenStyle(el);
+            });
+        }
+
+        /* ---------- Navigation ----------
+           goTo scrolls to the target. Both forward-replay and backward-
+           rewind need to mutate the target BEFORE scrolling — while it's
+           still offscreen — so the viewer never sees the old state flash
+           into view. Resetting after the slide is in view causes a visible
+           "show then hide" blink; the IntersectionObserver fires too late
+           (80% threshold) to catch it. */
+        goTo(index) {
+            const clamped = Math.max(0, Math.min(this.slides.length - 1, index));
+            if (clamped === this.currentSlide) return;
+
+            const target = this.slides[clamped];
+            const goingForward = clamped > this.currentSlide;
+
+            if (target.classList.contains('visible')) {
+                if (goingForward) {
+                    // Forward replay: full reset so the observer can play reveals fresh.
+                    target.classList.remove('visible');
+                    this._resetSlideReveals(target);
+                } else {
+                    // Backward rewind: hide any shown steps so the slide
+                    // scrolls back in at the start of its stepped content.
+                    this._rewindSlide(target);
+                }
+            }
+
+            this._scrollToSlide(clamped, 'smooth');
+        }
+
+        _scrollToSlide(index, behavior) {
+            this.viewports[index]?.scrollIntoView({ behavior, block: 'start' });
+        }
+
+        _slideIndexFromHash(hash) {
+            if (!hash) return -1;
+            return this.slides.findIndex((s) => '#' + s.id === hash);
+        }
+
+        _syncHash() {
+            const slide = this.slides[this.currentSlide];
+            if (!slide || !slide.id) return;
+            const newHash = '#' + slide.id;
+            if (location.hash !== newHash) {
+                // replaceState — keeps the URL in sync without polluting history,
+                // so the browser back button exits the deck instead of stepping through slides.
+                try {
+                    history.replaceState(null, '', newHash);
+                } catch {
+                    // Sandboxed iframes (opaque origin, about:srcdoc) reject URL
+                    // mutation with a SecurityError. Hash sync is a nicety — an
+                    // unguarded throw here kills the observer callback before it
+                    // marks the slide visible and plays its reveals.
+                }
+            }
+        }
+
+        _setupHashNav() {
+            // React to external hash changes (anchor link clicks, back/forward if user uses pushState manually)
+            window.addEventListener('hashchange', () => {
+                const idx = this._slideIndexFromHash(location.hash);
+                if (idx >= 0 && idx !== this.currentSlide) this.goTo(idx);
+            });
+        }
+
+        /* ---------- Custom cursor ----------
+           Accent disc that follows the pointer, hidden after idle. */
+        _setupCursor() {
+            if (!matchMedia('(hover: hover)').matches) return;
+
+            const cursor = document.createElement('div');
+            cursor.className = 'chassis-cursor';
+            cursor.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(cursor);
+            document.body.classList.add('chassis-cursor-active');
+
+            const half = 16;  // matches width/height / 2 in CSS
+            const IDLE_MS = 2500;
+            let idleTimer = null;
+
+            const show = () => {
+                cursor.classList.add('visible');
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                    cursor.classList.remove('visible');
+                }, IDLE_MS);
+            };
+            const hide = () => {
+                clearTimeout(idleTimer);
+                cursor.classList.remove('visible');
+            };
+
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.transform = `translate3d(${e.clientX - half}px, ${e.clientY - half}px, 0)`;
+                show();
+            });
+            document.addEventListener('mouseleave', hide);
+            document.addEventListener('mouseenter', show);
+        }
+
+        /* ---------- Fullscreen ---------- */
+        toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.().catch(() => {});
+            } else {
+                document.exitFullscreen?.();
+            }
+        }
+
+        next() { this.goTo(this.currentSlide + 1); }
+        prev() { this.goTo(this.currentSlide - 1); }
+        first() { this.goTo(0); }
+        last() { this.goTo(this.slides.length - 1); }
+
+        /* ---------- Step-aware advance / retreat ----------
+           advance() reveals the next .step on the current slide (if any),
+           otherwise advances to the next slide. retreat() hides the last
+           revealed step, otherwise goes back to the previous slide. */
+        advance() {
+            const current = this.slides[this.currentSlide];
+            const nextStep = current?.querySelector('.step:not(.step-shown)');
+            if (nextStep) {
+                nextStep.classList.add('step-shown');
+                // No stagger on click-reveal — the user's gesture is the trigger.
+                this._playReveal(nextStep, 0);
+                return;
+            }
+            this.next();
+        }
+        retreat() {
+            const current = this.slides[this.currentSlide];
+            const shown = current?.querySelectorAll('.step.step-shown');
+            if (shown && shown.length > 0) {
+                const last = shown[shown.length - 1];
+                last.classList.remove('step-shown');
+                this._cancelReveal(last);
+                this._applyHiddenStyle(last);
+                return;
+            }
+            this.prev();
+        }
+
+        /* ---------- Intersection observer ----------
+           Fire late (>= 80% in view) so reveals play on a settled slide.
+           This is the single source of truth for active-slide state.
+
+           Forward:  add .visible, play reveals. (goTo() has already reset
+                     the target to pre-reveal state if this is a re-visit,
+                     so the animation is fresh either way.)
+           Backward: add .visible, rewind to the start of the stepped
+                     content — reveals are shown instantly (no replay) and
+                     every step is hidden again so the viewer can step
+                     through it fresh. */
+        _setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const idx = this.viewports.indexOf(entry.target);
+                    if (idx < 0) return;
+                    const slide = this.slides[idx];
+
+                    if (idx === this.currentSlide) {
+                        // Same-slide re-fire (initial load, resize, fullscreen).
+                        if (!slide.classList.contains('visible')) {
+                            slide.classList.add('visible');
+                        }
+                        // Idempotent: only plays if not already marked played.
+                        this._playSlideReveals(slide);
+                        return;
+                    }
+
+                    const goingForward = idx > this.currentSlide;
+                    this.currentSlide = idx;
+                    this._updateNavDots();
+                    this._syncHash();
+
+                    slide.classList.add('visible');
+                    if (goingForward) {
+                        this._playSlideReveals(slide);
+                    } else {
+                        this._rewindSlide(slide);
+                    }
+                });
+            }, { threshold: 0.8 });
+
+            this.viewports.forEach((viewport) => observer.observe(viewport));
+        }
+
+        /* ---------- Keyboard ---------- */
+        _setupKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                // Skip when user is editing text
+                if (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+
+                switch (e.key) {
+                    // Step-aware: consume steps first, then advance slides
+                    case 'ArrowDown':
+                    case 'ArrowRight':
+                    case ' ':
+                        e.preventDefault(); this.advance(); break;
+                    case 'ArrowUp':
+                    case 'ArrowLeft':
+                        e.preventDefault(); this.retreat(); break;
+                    // Slide-level: always skip past steps
+                    case 'PageDown':
+                        e.preventDefault(); this.next(); break;
+                    case 'PageUp':
+                        e.preventDefault(); this.prev(); break;
+                    case 'Home':
+                        e.preventDefault(); this.first(); break;
+                    case 'End':
+                        e.preventDefault(); this.last(); break;
+                    case 'f':
+                    case 'F':
+                        e.preventDefault(); this.toggleFullscreen(); break;
+                    case 'r':
+                    case 'R':
+                        e.preventDefault(); this.first(); break;
+                }
+            });
+        }
+
+        /* ---------- Wheel / trackpad ----------
+           ALWAYS preventDefault — letting any native wheel scroll through
+           races against scrollIntoView + mandatory snap, and blocks macOS
+           two-finger horizontal swipes from triggering browser back/forward.
+           Whichever axis has the larger magnitude wins, so vertical scroll
+           and horizontal trackpad swipes both drive advance/retreat. Lock
+           briefly after a gesture so trackpad inertia (continuous small
+           deltas) can't spam next(). */
+        _setupWheelNav() {
+            let locked = false;
+            window.addEventListener('wheel', (e) => {
+                if (e.ctrlKey) return;                // preserve browser pinch-zoom (ctrl+wheel)
+                e.preventDefault();                   // block native scroll + horizontal back-swipe
+                if (locked) return;
+                const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                if (Math.abs(delta) < 20) return;     // ignore tiny flicks
+                locked = true;
+                if (delta > 0) this.advance(); else this.retreat();
+                setTimeout(() => { locked = false; }, 500);
+            }, { passive: false });
+        }
+
+        /* ---------- Touch / swipe ----------
+           Horizontal swipes advance / retreat slides; left = next, right =
+           prev (matches stories / carousel conventions). Dominantly
+           vertical swipes fall through to native scroll-snap so the
+           existing top/bottom behavior keeps working. A time budget
+           rejects slow pans that were really aborted scrolls. */
+        _setupTouchNav() {
+            const MIN_DISTANCE = 50;     // px — below this is a tap or jitter
+            const MAX_TIME = 600;        // ms — slower than this is a pan, not a swipe
+            const DOMINANCE = 1.2;       // horizontal must beat vertical by this factor
+
+            let startX = 0, startY = 0, startTime = 0;
+            let tracking = false;
+
+            window.addEventListener('touchstart', (e) => {
+                if (document.body.classList.contains('artifact-editor-editing')) { tracking = false; return; }
+                if (e.touches.length !== 1) { tracking = false; return; }
+                const t = e.touches[0];
+                startX = t.clientX;
+                startY = t.clientY;
+                startTime = performance.now();
+                tracking = true;
+            }, { passive: true });
+
+            window.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                const ax = Math.abs(dx), ay = Math.abs(dy);
+                if (ax < MIN_DISTANCE) return;
+                if (ax < ay * DOMINANCE) return;
+                if (performance.now() - startTime > MAX_TIME) return;
+                if (dx < 0) this.advance(); else this.retreat();
+            }, { passive: true });
+
+            window.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+        }
+
+        /* ---------- Canvas scaling ----------
+           Each scaler holds a fixed 1920×1080 slide. Compute the
+           scale factor that fits it inside the viewport and apply via
+           CSS custom property. Runs on init, resize, and fullscreen. */
+        _setupCanvasScale() {
+            const CANVAS_W = 1920;
+            const CANVAS_H = 1080;
+            const scales = this.scales;
+
+            const update = () => {
+                const scale = Math.min(
+                    window.innerWidth / CANVAS_W,
+                    window.innerHeight / CANVAS_H
+                );
+                scales.forEach((el) => {
+                    el?.style.setProperty('--slide-scale', scale);
+                });
+            };
+
+            update();
+            window.addEventListener('resize', update);
+            document.addEventListener('fullscreenchange', () => {
+                requestAnimationFrame(update);
+            });
+        }
+
+        /* ---------- Viewport sync ----------
+           Resize / fullscreenchange → realign current slide. Each slide is
+           100vh, so a viewport height change leaves the existing scroll
+           position out of alignment with the slide top; scroll-snap doesn't
+           re-snap on its own. */
+        _setupViewportSync() {
+            const realign = () => {
+                requestAnimationFrame(() => {
+                    this._scrollToSlide(this.currentSlide, 'auto');
+                });
+            };
+            window.addEventListener('resize', realign);
+            document.addEventListener('fullscreenchange', realign);
+        }
+
+        /* ---------- Nav dots ---------- */
+        _buildNavDots() {
+            // Clear first — prevents duplicates when DOM is re-serialized/re-opened
+            this.navDotsContainer.innerHTML = '';
+            this.slides.forEach((slide, idx) => {
+                const dot = document.createElement('button');
+                dot.setAttribute('aria-label', `Go to slide ${idx + 1}`);
+                if (idx === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => this.goTo(idx));
+                this.navDotsContainer.appendChild(dot);
+            });
+        }
+
+        _updateNavDots() {
+            const dots = this.navDotsContainer.querySelectorAll('button');
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === this.currentSlide);
+            });
+        }
+    }
+
+    /* ---------- Auto-init ---------- */
+    function init() {
+        // Each slide canvas is its own editable host for the inline editor.
+        document.querySelectorAll('.slide').forEach(function (el) {
+            el.classList.add('artifact-editable');
+        });
+        window.slides = new SlidePresentation();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chassis -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PROFEL 2 - Week 1 Session 1: Course Introduction & IS Overview</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" />
+  <style>
+    :root {
+      --background: #f9f7f4;
+      --foreground: #2d3748;
+      --accent: #2a8f9e;
+      --accent-foreground: #ffffff;
+      --coral: #e07a5f;
+      --coral-light: #f4a98a;
+      --mint: #d4edda;
+      --card: #ffffff;
+      --card-foreground: #2d3748;
+      --border: rgba(45,55,72,0.08);
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Work Sans', sans-serif;
+    }
+
+    body { background: var(--background); }
+
+    h1, h2, h3 { font-family: var(--font-display); color: var(--foreground); letter-spacing: -0.02em; }
+    p, li, span, td, th { font-family: var(--font-body); color: var(--foreground); }
+
+    .slide {
+      background: var(--background);
+      padding: 80px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Title slide */
+    .title-slide {
+      background: linear-gradient(135deg, #f0fafb 0%, #f9f7f4 40%, #fef5f0 100%);
+      align-items: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .title-slide::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      right: -200px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(42,143,158,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .title-slide::after {
+      content: '';
+      position: absolute;
+      bottom: -150px;
+      left: -150px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(224,122,95,0.06) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .title-slide h1 { font-size: 88px; font-weight: 800; line-height: 1.05; margin-bottom: 24px; }
+    .title-slide .subtitle { font-size: 36px; color: var(--accent); font-weight: 500; margin-bottom: 16px; }
+    .title-slide .meta { font-size: 24px; color: rgba(45,55,72,0.6); font-weight: 300; }
+
+    /* Section header */
+    .section-header {
+      background: linear-gradient(135deg, var(--accent) 0%, #1a6b77 100%);
+      align-items: center;
+      text-align: center;
+    }
+    .section-header h1 { color: #fff; font-size: 72px; font-weight: 700; }
+    .section-header p { color: rgba(255,255,255,0.85); font-size: 32px; max-width: 800px; }
+    .section-header .section-num { color: rgba(255,255,255,0.4); font-size: 120px; font-weight: 800; position: absolute; top: 60px; left: 80px; }
+
+    /* Content slide */
+    .content-slide h2 { font-size: 56px; font-weight: 700; margin-bottom: 40px; line-height: 1.15; }
+    .content-slide h3 { font-size: 40px; font-weight: 600; margin-bottom: 32px; color: var(--accent); }
+    .content-slide p { font-size: 32px; line-height: 1.5; max-width: 1400px; color: rgba(45,55,72,0.8); }
+    .content-slide ul { list-style: none; padding: 0; }
+    .content-slide ul li { font-size: 30px; line-height: 1.5; padding: 12px 0 12px 48px; position: relative; color: rgba(45,55,72,0.85); }
+    .content-slide ul li::before { content: ''; position: absolute; left: 0; top: 22px; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; }
+
+    /* Eyebrow */
+    .eyebrow { font-family: var(--font-body); font-size: 22px; font-weight: 500; color: var(--coral); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+
+    /* Cards */
+    .card-grid { display: grid; gap: 24px; margin-top: 32px; }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 36px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+    }
+    .card h4 { font-family: var(--font-display); font-size: 28px; font-weight: 600; margin-bottom: 12px; color: var(--accent); }
+    .card p { font-size: 24px; line-height: 1.45; color: rgba(45,55,72,0.75); }
+
+    /* Table */
+    .data-table { width: 100%; border-collapse: collapse; margin-top: 24px; border-radius: 12px; overflow: hidden; }
+    .data-table th { background: var(--accent); color: #fff; font-family: var(--font-display); font-size: 24px; font-weight: 600; padding: 18px 24px; text-align: left; }
+    .data-table td { padding: 16px 24px; font-size: 24px; border-bottom: 1px solid var(--border); background: var(--card); }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:nth-child(even) td { background: #f8fafb; }
+
+    /* Image slide */
+    .img-container { border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .img-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* Split layout */
+    .split { flex-direction: row; gap: 60px; align-items: center; }
+    .split .text-side { flex: 1; }
+    .split .img-side { flex: 1; border-radius: 16px; overflow: hidden; height: 600px; }
+    .split .img-side img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* Stat */
+    .stat-block { display: flex; gap: 48px; margin-top: 40px; }
+    .stat-item { text-align: center; }
+    .stat-item .number { font-family: var(--font-display); font-size: 72px; font-weight: 800; color: var(--accent); }
+    .stat-item .label { font-size: 22px; color: rgba(45,55,72,0.6); margin-top: 8px; }
+
+    /* Highlight box */
+    .highlight-box { background: linear-gradient(135deg, #f0fafb, #e8f8fa); border-left: 5px solid var(--accent); border-radius: 0 12px 12px 0; padding: 32px 40px; margin-top: 24px; }
+    .highlight-box p { font-size: 28px; color: var(--foreground); }
+
+    /* Quiz slide */
+    .quiz-slide { background: linear-gradient(135deg, #fef9f6 0%, #f9f7f4 100%); }
+    .quiz-slide h2 { color: var(--coral); }
+    .quiz-option { background: var(--card); border-radius: 12px; padding: 20px 32px; margin: 12px 0; font-size: 28px; border: 2px solid var(--border); }
+    .quiz-option span { font-weight: 600; color: var(--accent); margin-right: 16px; }
+
+    /* Accent text */
+    .accent { color: var(--accent); }
+    .coral { color: var(--coral); }
+    .bold { font-weight: 700; }
+
+    /* Timeline */
+    .timeline { position: relative; margin-top: 40px; padding-left: 60px; }
+    .timeline::before { content: ''; position: absolute; left: 24px; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, var(--accent), var(--coral)); border-radius: 2px; }
+    .timeline-item { position: relative; margin-bottom: 32px; }
+    .timeline-item::before { content: ''; position: absolute; left: -48px; top: 8px; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; border: 3px solid var(--background); }
+    .timeline-item .year { font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--accent); }
+    .timeline-item .desc { font-size: 26px; color: rgba(45,55,72,0.8); margin-top: 4px; }
+
+    /* Speaker notes (hidden by default, toggle with 'N' key) */
+    .speaker-notes { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(45,55,72,0.95); color: #fff; padding: 24px 40px; font-size: 18px; line-height: 1.6; font-family: var(--font-body); max-height: 300px; overflow-y: auto; }
+    .notes-visible .speaker-notes { display: block; }
+
+    /* Footer bar */
+    .slide-footer { position: absolute; bottom: 30px; left: 80px; right: 80px; display: flex; justify-content: space-between; align-items: center; }
+    .slide-footer span { font-size: 18px; color: rgba(45,55,72,0.4); font-family: var(--font-body); }
+
+    /* Comparison columns */
+    .compare-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 32px; }
+    .compare-col { padding: 36px; border-radius: 16px; }
+    .compare-col.old { background: #fff3f0; border: 2px solid rgba(224,122,95,0.2); }
+    .compare-col.new { background: #f0fafb; border: 2px solid rgba(42,143,158,0.2); }
+    .compare-col h4 { font-family: var(--font-display); font-size: 28px; font-weight: 700; margin-bottom: 16px; }
+    .compare-col.old h4 { color: var(--coral); }
+    .compare-col.new h4 { color: var(--accent); }
+    .compare-col li { font-size: 24px; line-height: 1.6; color: rgba(45,55,72,0.8); padding: 4px 0; }
+  </style>
+</head>
+<body>
+
+<!-- ===================== SLIDE 1: TITLE ===================== -->
+<section class="slide title-slide">
+  <span class="eyebrow reveal d1">PROFEL 2 | Week 1, Session 1</span>
+  <h1 class="reveal d2">Updates in<br>Information System 2</h1>
+  <p class="subtitle reveal d3">Course Introduction & IS Landscape Overview</p>
+  <p class="meta reveal d4">Cronasia Foundation College, Inc. | BS Accounting Information System</p>
+  <p class="meta reveal d5">Instructor: Joshua E. Nisnisan</p>
+  <div class="speaker-notes">
+    SCRIPT: "Good morning/afternoon, class! Welcome sa inyong course nga PROFEL 2: Updates in Information System 2. Ako si Sir Joshua Nisnisan, ug karon atong i-start ang atong journey sa pag-explore sa mga latest trends ug updates sa Information Systems. Excited ko kay kini nga course, very relevant gyud ni sa inyong future career as accountants ug IS professionals. So, are you ready? Let's go!"
+  </div>
+</section>
+
+<!-- ===================== SLIDE 2: COURSE OVERVIEW ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Course Information</span>
+  <h2 class="reveal d2">Course at a Glance</h2>
+  <table class="data-table reveal d3">
+    <tr><th style="width:40%">Detail</th><th>Information</th></tr>
+    <tr><td><strong>Course Code</strong></td><td>PROFEL 2</td></tr>
+    <tr><td><strong>Course Title</strong></td><td>Updates in Information System 2</td></tr>
+    <tr><td><strong>Credit Units</strong></td><td>3 Units</td></tr>
+    <tr><td><strong>Contact Hours</strong></td><td>3 Hours/Week (2 sessions × 1.5 hrs)</td></tr>
+    <tr><td><strong>Classification</strong></td><td>Major Course</td></tr>
+    <tr><td><strong>Pre-requisites</strong></td><td>None</td></tr>
+    <tr><td><strong>Schedule</strong></td><td>MW 2:30 PM - 4:00 PM</td></tr>
+  </table>
+  <div class="speaker-notes">
+    SCRIPT: "So class, let me give you the basic information about this course. Ang PROFEL 2 is a 3-unit major course. Wala tay pre-requisite so fresh start ta tanan. Our schedule is Monday-Wednesday, 2:30 to 4:00 PM. Every week, duha ta ka sessions ug around 1 hour to 1 hour and 30 minutes each session. Total na, 54 hours for the whole semester. Mao ni ang overview sa atong course."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 3: INSTRUCTOR ===================== -->
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Your Instructor</span>
+    <h2 class="reveal d2">Joshua E. Nisnisan</h2>
+    <ul class="reveal d3">
+      <li>Faculty, Cronasia Foundation College</li>
+      <li>Contact: 09166852944</li>
+      <li>Email: j.nisnisan@cfci.ph.education</li>
+      <li>Consultation: MW 2:30-4:00 PM</li>
+    </ul>
+    <div class="highlight-box reveal d4">
+      <p>"Serve to Thrive" — by uplifting others, we uplift ourselves.</p>
+    </div>
+  </div>
+  <div class="img-side reveal d3">
+    <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=600&fit=crop" alt="Teacher in classroom" />
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Let me introduce myself formally. Ako si Joshua E. Nisnisan, faculty diri sa Cronasia Foundation College. Pwede mo ko ma-reach sa akong number or email. Ang consultation time nako is Monday and Wednesday, 2:30 to 4:00 PM, so if naay mga questions or concerns, ayaw pagduha-duha mo og approach. Remember our philosophy: Serve to Thrive. Meaning, kung ato silang tabangan ang uban, mo-grow pud ta. That's what we believe in diri sa Cronasia."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 4: CLO PART 1 ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Course Learning Outcomes</span>
+  <h2 class="reveal d2">What You'll Achieve (1-4)</h2>
+  <ul>
+    <li class="step"><strong class="accent">CLO 1:</strong> Explain current developments, trends, and issues in IS and their relevance to organizations and AIS</li>
+    <li class="step"><strong class="accent">CLO 2:</strong> Analyze the business value, limitations, risks of emerging IS technologies</li>
+    <li class="step"><strong class="accent">CLO 3:</strong> Evaluate cloud platforms, automation tools, analytics, AI, and digital solutions</li>
+    <li class="step"><strong class="accent">CLO 4:</strong> Apply information security, data privacy, IT governance, and risk management principles</li>
+  </ul>
+  <div class="speaker-notes">
+    SCRIPT: "Karon, let's talk about ang inyong learning outcomes. By the end of this course, kini ang mga skills ug knowledge nga ma-develop ninyo. First, ma-explain ninyo ang current developments sa IS. Second, ma-analyze ninyo ang mga risks ug benefits sa emerging technologies. Third, ma-evaluate ninyo ang different tools like cloud, AI, automation. Fourth, ma-apply ninyo ang security ug privacy principles. These are not just theoretical — kini tanan applicable sa inyong future career as accountants!"
+  </div>
+</section>
+
+<!-- ===================== SLIDE 5: CLO PART 2 ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Course Learning Outcomes</span>
+  <h2 class="reveal d2">What You'll Achieve (5-8)</h2>
+  <ul>
+    <li class="step"><strong class="accent">CLO 5:</strong> Prepare professional technology briefs, case analyses, and comparative evaluations</li>
+    <li class="step"><strong class="accent">CLO 6:</strong> Design an IS update proposal addressing business/accounting process needs</li>
+    <li class="step"><strong class="accent">CLO 7:</strong> Communicate recommendations through reports, presentations, and discussions</li>
+    <li class="step"><strong class="accent">CLO 8:</strong> Demonstrate professional ethics, lifelong learning, adaptability, and collaboration</li>
+  </ul>
+  <div class="speaker-notes">
+    SCRIPT: "Continuing sa atong CLOs. Fifth, ma-prepare mo og professional technology briefs — like real-world reports. Sixth, mag-design mo og IS update proposal. Seventh, ma-communicate ninyo ang inyong recommendations clearly. And lastly, CLO 8, ma-demonstrate ninyo ang professional ethics ug adaptability. Remember class, sa IT world, ang constant mao ang change. So adaptability is key gyud."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 6: GRADING & REQUIREMENTS ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Assessment</span>
+  <h2 class="reveal d2">Grading & Requirements</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card">
+      <h4>Requirements</h4>
+      <p>• Activities & Quizzes<br>• Technology Trend Scans<br>• Case Analyses<br>• Comparative Evaluations<br>• Group IS Update Proposal<br>• Final Project Defense</p>
+    </div>
+    <div class="card">
+      <h4>Grading Scale</h4>
+      <p>≥95% = 1.1 (Highest)<br>90% = 1.6<br>85% = 2.1<br>80% = 2.5<br>75% = 3.0 (Passing)<br>≤74% = 5.0 (Failed)</p>
+    </div>
+  </div>
+  <div class="highlight-box reveal d4">
+    <p>📌 Late submissions: <strong>10% deduction per day</strong> from total score</p>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Karon, let's discuss sa grading. Accumulation of points ta og gamit. Ang inyong requirements kay activities, quizzes, technology briefs, case analyses, ug ang pinakagrabe: ang Group IS Update Proposal with defense. Take note: late submissions kay minus 10% per day! So please, submit on time. Ang passing grade is 75% which is equivalent to 3.0. I-aim ninyo ang highest ha, dili lang passing."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 7: COURSE POLICIES ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Important Policies</span>
+  <h2 class="reveal d2">Class Rules & Academic Integrity</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card">
+      <h4>Academic Integrity</h4>
+      <p>• No cheating or plagiarism<br>• Properly cite all sources<br>• Violation = Zero score or F grade<br>• Serious fraud = Dismissal</p>
+    </div>
+    <div class="card">
+      <h4>Attendance & Rules</h4>
+      <p>• 20% absence limit (7 absences max)<br>• 15 min late = Absent<br>• No gadgets during class<br>• Keep room clean & organized</p>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Listen carefully ani class. Academic integrity is very important. Wala tay cheating, wala tay plagiarism. Kung ma-catch mo, zero or F ang grade, or worse, dismissal pa. About attendance, 7 absences maximum lang for our TTH schedule equivalent. Kung mag late mo og more than 15 minutes, absent na na. Ug please, no gadgets during class unless I say so. Naa tay gadget time kung needed for activities, but during lecture, focus ta. Fair enough? Good."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 8: SESSION ROADMAP ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Today's Session</span>
+  <h2 class="reveal d2">Session 1 Roadmap</h2>
+  <ul>
+    <li class="step">✅ Course Orientation (Done!)</li>
+    <li class="step">📖 What are Information Systems? (Quick Review)</li>
+    <li class="step">📈 Evolution of IS: From Mainframes to Cloud</li>
+    <li class="step">🌐 Current IS Landscape & Key Trends</li>
+    <li class="step">🔄 Introduction to Digital Transformation</li>
+    <li class="step">🇵🇭 IS in the Philippine Context</li>
+    <li class="step">📝 Session Wrap-up & Preview</li>
+  </ul>
+  <div class="speaker-notes">
+    SCRIPT: "Okay, so karon nga session, mao ni ang atong roadmap. Done na ta sa course orientation. Next, i-review nato briefly ang Information Systems basics. Then, i-explore nato ang evolution — gikan sa mga mainframe computers hangtud sa cloud. After, tan-awon nato ang current landscape. Then, intro sa Digital Transformation. And lastly, we'll look at ang Philippine context. Daghan ta og ma-cover pero exciting ni! Let's move forward."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 9: SECTION BREAK - IS BASICS ===================== -->
+<section class="slide section-header">
+  <span class="section-num reveal d1">01</span>
+  <h1 class="reveal d2">What are<br>Information Systems?</h1>
+  <p class="reveal d3">A quick review of fundamentals before we dive into updates</p>
+</section>
+
+<!-- ===================== SLIDE 10: IS DEFINITION ===================== -->
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Fundamentals</span>
+    <h2 class="reveal d2">Information Systems Defined</h2>
+    <p class="reveal d3">An <strong>Information System (IS)</strong> is an organized combination of people, hardware, software, communication networks, data resources, and policies that stores, retrieves, transforms, and disseminates information in an organization.</p>
+    <div class="highlight-box reveal d4">
+      <p>IS is not just technology — it's the <strong class="accent">entire ecosystem</strong> that supports decision-making.</p>
+    </div>
+  </div>
+  <div class="img-side reveal d3">
+    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=600&fit=crop" alt="Data dashboard on screen" />
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "So let's start with the basics. Unsa gyud ba ang Information System? Simply put, it's a combination of people, hardware, software, networks, data, and policies nga nag-work together para mag-collect, store, process, ug distribute sa information. Important ni: IS is not just about computers or software. It includes ang PEOPLE, ang processes, ang policies. Tan-awa ninyo ang picture — ang dashboard sa screen represents output sa IS, pero behind that, daghan og components nga nag-collaborate."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 11: COMPONENTS OF IS ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Core Components</span>
+  <h2 class="reveal d2">The 5 Components of Information Systems</h2>
+  <div class="card-grid cols-3 reveal d3" style="margin-top:24px;">
+    <div class="card">
+      <h4>1. Hardware</h4>
+      <p>Physical devices: computers, servers, mobile devices, networking equipment</p>
+    </div>
+    <div class="card">
+      <h4>2. Software</h4>
+      <p>Programs & applications: OS, ERP, databases, cloud apps</p>
+    </div>
+    <div class="card">
+      <h4>3. Data</h4>
+      <p>Raw facts & figures transformed into useful information</p>
+    </div>
+    <div class="card">
+      <h4>4. People</h4>
+      <p>Users, IT staff, managers who interact with the system</p>
+    </div>
+    <div class="card">
+      <h4>5. Processes</h4>
+      <p>Policies, procedures, and rules governing IS operations</p>
+    </div>
+    <div class="card" style="background: linear-gradient(135deg, #f0fafb, #e8f8fa);">
+      <h4 style="color: var(--coral);">+ Networks</h4>
+      <p>Communication infrastructure connecting all components</p>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Ang IS naay 5 main components — plus networks as the connector. Una, HARDWARE — physical devices like computers, servers. Ikaduha, SOFTWARE — ang programs nga nag-run sa hardware. Ikatulo, DATA — raw facts nga gi-process para mahimong information. Ikaupat, PEOPLE — tanan ang nag-interact sa system, gikan users hangtud IT professionals. Ikalima, PROCESSES — ang rules ug procedures. Ug finally, NETWORKS — ang infrastructure nga nag-connect sa tanan. Kining tanan, mag-work together sila. Kung usa ra ang missing, dili mag-function ang IS properly."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 12: EVOLUTION TIMELINE ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Historical Context</span>
+  <h2 class="reveal d2">The Evolution of Information Systems</h2>
+  <div class="timeline reveal d3">
+    <div class="timeline-item">
+      <span class="year">1950s-1960s</span>
+      <span class="desc">Mainframe Era — Batch processing, large centralized computers</span>
+    </div>
+    <div class="timeline-item">
+      <span class="year">1970s-1980s</span>
+      <span class="desc">PC Revolution — Personal computers, spreadsheets, local databases</span>
+    </div>
+    <div class="timeline-item">
+      <span class="year">1990s</span>
+      <span class="desc">Internet & Client-Server — Web, email, networked systems, ERP</span>
+    </div>
+    <div class="timeline-item">
+      <span class="year">2000s-2010s</span>
+      <span class="desc">Cloud & Mobile — SaaS, smartphones, social media, big data</span>
+    </div>
+    <div class="timeline-item">
+      <span class="year">2020s</span>
+      <span class="desc">AI & Automation — Generative AI, ML, IoT, blockchain, digital twins</span>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Let's trace kung giunsa pag-evolve ang IS over the decades. Sa 1950s-60s, mainframes ang hari. Dako kaayo nga computers sa usa ka room. By the 70s-80s, personal computers na — nagka accessible. Then sa 90s, the internet changed everything — email, web, ERP systems. 2000s brought us cloud computing ug mobile. Ug karon, 2020s, we're in the era of AI and automation. Notice class, every decade, mas faster ang change. Ang question karon: unsa ang next? Mao na ang i-explore nato sa tibuok semester."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 13: TRADITIONAL VS MODERN ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Comparison</span>
+  <h2 class="reveal d2">Traditional IS vs. Modern IS</h2>
+  <div class="compare-cols reveal d3">
+    <div class="compare-col old">
+      <h4>Traditional IS</h4>
+      <ul style="list-style:none;padding:0;">
+        <li>• On-premise servers</li>
+        <li>• Manual data entry</li>
+        <li>• Siloed departments</li>
+        <li>• Paper-based workflows</li>
+        <li>• Reactive decision-making</li>
+        <li>• High upfront costs</li>
+      </ul>
+    </div>
+    <div class="compare-col new">
+      <h4>Modern IS</h4>
+      <ul style="list-style:none;padding:0;">
+        <li>• Cloud-based infrastructure</li>
+        <li>• Automated data capture</li>
+        <li>• Integrated systems (APIs)</li>
+        <li>• Digital workflows</li>
+        <li>• Predictive analytics & AI</li>
+        <li>• Pay-as-you-go (SaaS)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "I-compare nato ang Traditional vs Modern IS. Sa traditional, naa tay on-premise servers — kailangan mo og server room, manual data entry, siloed departments. Karon sa modern IS, cloud-based na tanan. Automated na ang data capture. Integrated na ang systems through APIs — meaning, ang accounting system makig-communicate na sa inventory system automatically. Instead of reactive decisions, naa na tay predictive analytics. Ug instead of dagkong upfront costs, pay-as-you-go na lang through SaaS subscriptions. Big difference, diba?"
+  </div>
+</section>
+
+<!-- ===================== SLIDE 14: WHY IS UPDATES MATTER ===================== -->
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Why This Course Matters</span>
+    <h2 class="reveal d2">Why IS Updates Matter</h2>
+    <ul class="reveal d3">
+      <li><strong>Rapid change:</strong> Tech evolves faster than ever before</li>
+      <li><strong>Career relevance:</strong> Employers expect tech-literate accountants</li>
+      <li><strong>Risk awareness:</strong> New systems = new vulnerabilities</li>
+      <li><strong>Competitive edge:</strong> Organizations that adapt survive</li>
+    </ul>
+  </div>
+  <div class="img-side reveal d4">
+    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=600&fit=crop" alt="Business technology analytics" />
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "So why should we care about IS updates? Number one, ang pace of change is insane. Ang technology 5 years ago, outdated na karon. Number two, career relevance — kung mag-apply mo sa trabaho, expected na nga tech-literate mo. Hindi lang Excel. They expect you know about cloud, automation, data analytics. Number three, every new system brings new risks — cybersecurity, data privacy. And number four, organizations that don't adapt, they die. Look at Kodak, Nokia, Blockbuster — gilamoy sa competition because wa sila mag-adapt. So kini nga course, your survival kit ni in the modern business world."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 15: SECTION BREAK - CURRENT LANDSCAPE ===================== -->
+<section class="slide section-header">
+  <span class="section-num reveal d1">02</span>
+  <h1 class="reveal d2">Current IS<br>Landscape</h1>
+  <p class="reveal d3">The technologies reshaping organizations today</p>
+</section>
+
+<!-- ===================== SLIDE 16: KEY TRENDS 2024-2025 ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">2024-2025 Trends</span>
+  <h2 class="reveal d2">Top IS Trends Right Now</h2>
+  <div class="card-grid cols-3 reveal d3">
+    <div class="card">
+      <h4>🤖 Generative AI</h4>
+      <p>ChatGPT, Copilots, AI-powered automation in every industry</p>
+    </div>
+    <div class="card">
+      <h4>☁️ Cloud-First</h4>
+      <p>Organizations migrating entirely to cloud infrastructure</p>
+    </div>
+    <div class="card">
+      <h4>🔒 Zero Trust Security</h4>
+      <p>Never trust, always verify approach to cybersecurity</p>
+    </div>
+    <div class="card">
+      <h4>📊 Data Analytics</h4>
+      <p>Real-time dashboards, predictive modeling, BI tools</p>
+    </div>
+    <div class="card">
+      <h4>⚡ Low-Code/No-Code</h4>
+      <p>Building apps without traditional programming</p>
+    </div>
+    <div class="card">
+      <h4>🔗 API Economy</h4>
+      <p>Systems integration through APIs enabling seamless workflows</p>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Let me show you ang top trends karon sa IS. First, Generative AI — ChatGPT, Microsoft Copilot, Google Gemini. These tools are revolutionizing how we work. Second, Cloud-First — companies are moving everything to the cloud. Third, Zero Trust Security — wala na tay 'trust by default,' verify everything. Fourth, Data Analytics — real-time dashboards, predictive models para sa better decisions. Fifth, Low-Code/No-Code — pwede na mag-build og apps without coding! Sixth, API Economy — systems nag-communicate sa usag-usa through APIs. These trends, i-deep dive nato sa mga upcoming weeks."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 17: STATS SLIDE ===================== -->
+<section class="slide content-slide" style="align-items:center; text-align:center;">
+  <span class="eyebrow reveal d1">By The Numbers</span>
+  <h2 class="reveal d2">The Scale of Digital Change</h2>
+  <div class="stat-block reveal d3">
+    <div class="stat-item">
+      <div class="number">94%</div>
+      <div class="label">of enterprises use<br>cloud services</div>
+    </div>
+    <div class="stat-item">
+      <div class="number">$4.8T</div>
+      <div class="label">global IT spending<br>in 2024</div>
+    </div>
+    <div class="stat-item">
+      <div class="number">77%</div>
+      <div class="label">of companies using<br>or exploring AI</div>
+    </div>
+    <div class="stat-item">
+      <div class="number">3.5M</div>
+      <div class="label">unfilled cybersecurity<br>jobs worldwide</div>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Look at these numbers, class. 94% of enterprises globally nag-gamit na og cloud services. Global IT spending reached 4.8 TRILLION dollars in 2024 — that's bigger than most countries' GDP! 77% of companies are already using or exploring AI. And here's something interesting for your career: 3.5 million unfilled cybersecurity jobs worldwide. Meaning, daghan og opportunity for those who know IS! Kini nga numbers show kung unsa ka-massive ang impact sa technology sa business world today."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 18: SECTION BREAK - DIGITAL TRANSFORMATION ===================== -->
+<section class="slide section-header">
+  <span class="section-num reveal d1">03</span>
+  <h1 class="reveal d2">Digital<br>Transformation</h1>
+  <p class="reveal d3">More than technology — it's a fundamental shift in how organizations operate</p>
+</section>
+
+<!-- ===================== SLIDE 19: DT DEFINITION ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Definition</span>
+  <h2 class="reveal d2">What is Digital Transformation?</h2>
+  <p class="reveal d3" style="font-size:34px; max-width:1400px;">Digital Transformation (DT) is the process of using digital technologies to create new or modify existing business processes, culture, and customer experiences to meet changing business and market requirements.</p>
+  <div class="highlight-box reveal d4">
+    <p><strong class="coral">Key Insight:</strong> DT is NOT just buying new software. It's about rethinking your entire business model, processes, and culture through the lens of digital possibilities.</p>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "So unsa gyud ang Digital Transformation? Daghan og misconception about this. People think, 'Oh, nag-install mi og new software, digitally transformed na mi.' WRONG. Digital Transformation is a FUNDAMENTAL rethinking of how your organization operates. It's about using technology to reimagine your business processes, your customer experience, even your company culture. Like for example, ang traditional bank nga nag-switch to mobile banking — that's not just adding an app. They had to rethink everything: security, customer service, processes. THAT'S digital transformation."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 20: PILLARS OF DT ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Framework</span>
+  <h2 class="reveal d2">Four Pillars of Digital Transformation</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card" style="border-left: 4px solid var(--accent);">
+      <h4>1. Process Transformation</h4>
+      <p>Reimagining workflows with automation, AI, and data analytics for efficiency</p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--coral);">
+      <h4>2. Business Model Transformation</h4>
+      <p>Shifting from products to services, platforms, subscriptions</p>
+    </div>
+    <div class="card" style="border-left: 4px solid #6c5ce7;">
+      <h4>3. Domain Transformation</h4>
+      <p>Entering new markets enabled by technology (e.g., Amazon → AWS)</p>
+    </div>
+    <div class="card" style="border-left: 4px solid #00b894;">
+      <h4>4. Cultural Transformation</h4>
+      <p>Building a digital-first mindset across the entire organization</p>
+    </div>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Digital Transformation naay four pillars. First, PROCESS Transformation — pag-automate ug pag-reimagine sa inyong workflows. Second, BUSINESS MODEL Transformation — like kung gikan ka sa selling products, mag-shift ka to subscription model. Third, DOMAIN Transformation — like ang Amazon, gikan bookseller, nag-enter sila sa cloud computing through AWS — totally different domain! Fourth, CULTURAL Transformation — building a digital-first mindset. This is actually the hardest one kay people resist change. Remember: technology is the easy part. Ang challenge gyud is ang people ug culture."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 21: DT IN PHILIPPINES ===================== -->
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Local Context</span>
+    <h2 class="reveal d2">Digital Transformation in the Philippines</h2>
+    <ul class="reveal d3">
+      <li><strong>GCash & Maya:</strong> 86M+ e-wallet users, fintech revolution</li>
+      <li><strong>BPO Industry:</strong> Cloud-based operations, AI-assisted services</li>
+      <li><strong>E-Government:</strong> PhilSys ID, eGov PH, online tax filing</li>
+      <li><strong>E-Commerce:</strong> Shopee, Lazada reshaping retail landscape</li>
+      <li><strong>Banking:</strong> Digital banks (Tonik, Maya Bank, GoTyme)</li>
+    </ul>
+  </div>
+  <div class="img-side reveal d4">
+    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=600&fit=crop" alt="Mobile payment transaction" />
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Karon, tan-awon nato ang DT diri sa Philippines. Familiar mo sa GCash? 86 million users na! That's digital transformation in action — gikan cash-based economy, nag-shift ta to digital payments. Ang BPO industry nato, nag-adopt na og cloud ug AI. Ang government, naa na tay PhilSys national ID, online services. E-commerce like Shopee ug Lazada — nag-reshape sa retail. Even banking — naay digital-only banks na like Tonik, Maya Bank, GoTyme. Right here in GenSan, makita nato ang impact. Daghan na mag-GCash imbes mag-cash. That's DT happening right before our eyes."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 22: PLATFORM BUSINESS MODELS ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Business Models</span>
+  <h2 class="reveal d2">Platform-Based Business Models</h2>
+  <table class="data-table reveal d3">
+    <tr><th>Platform</th><th>Type</th><th>How It Works</th></tr>
+    <tr><td><strong>Grab</strong></td><td>Multi-sided Platform</td><td>Connects drivers, riders, merchants, consumers</td></tr>
+    <tr><td><strong>Shopee</strong></td><td>Marketplace</td><td>Connects sellers & buyers, handles logistics</td></tr>
+    <tr><td><strong>GCash</strong></td><td>Digital Ecosystem</td><td>Payments, loans, investments, insurance in one app</td></tr>
+    <tr><td><strong>Facebook</strong></td><td>Social Platform</td><td>Connects users, monetizes through ads & data</td></tr>
+    <tr><td><strong>Airbnb</strong></td><td>Sharing Economy</td><td>Connects property owners with travelers</td></tr>
+  </table>
+  <div class="highlight-box reveal d4">
+    <p>Platform businesses don't own inventory — they own the <strong class="accent">connections</strong> and <strong class="accent">data</strong>.</p>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "One of the biggest shifts sa IS karon is ang platform-based business models. Look at Grab — wala silay own car, pero number 1 sila sa transportation. Shopee — wala silay own products, pero biggest marketplace. GCash — started as payments, karon naa na tay loans, investments, insurance, everything in one app. Ang key takeaway: these platforms don't own the physical assets. What they own is the CONNECTION — ang network, ang data, ang ecosystem. That's the power of IS sa modern business. As future accountants, kailangan ninyo ma-understand kung giunsa ni sila mag-generate og revenue ug value."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 23: TECHNOLOGY ADOPTION LIFECYCLE ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Framework</span>
+  <h2 class="reveal d2">Technology Adoption Lifecycle</h2>
+  <div style="margin-top:32px; text-align:center;" class="reveal d3">
+    <svg width="1200" height="350" viewBox="0 0 1200 350" style="max-width:100%;">
+      <!-- Bell curve -->
+      <path d="M 50 300 Q 150 300 200 280 Q 280 240 350 180 Q 420 100 500 60 Q 580 30 650 50 Q 720 70 780 120 Q 860 180 950 240 Q 1020 280 1100 295 Q 1150 300 1180 300" fill="none" stroke="#2a8f9e" stroke-width="4"/>
+      <!-- Area fill -->
+      <path d="M 50 300 Q 150 300 200 280 Q 280 240 350 180 Q 420 100 500 60 Q 580 30 650 50 Q 720 70 780 120 Q 860 180 950 240 Q 1020 280 1100 295 Q 1150 300 1180 300 L 1180 300 L 50 300 Z" fill="rgba(42,143,158,0.08)"/>
+      <!-- Labels -->
+      <text x="130" y="330" font-family="Outfit" font-size="20" fill="#e07a5f" font-weight="600">Innovators</text>
+      <text x="120" y="348" font-family="Work Sans" font-size="16" fill="#666">2.5%</text>
+      <text x="290" y="330" font-family="Outfit" font-size="20" fill="#e07a5f" font-weight="600">Early Adopters</text>
+      <text x="310" y="348" font-family="Work Sans" font-size="16" fill="#666">13.5%</text>
+      <text x="480" y="330" font-family="Outfit" font-size="20" fill="#2a8f9e" font-weight="600">Early Majority</text>
+      <text x="510" y="348" font-family="Work Sans" font-size="16" fill="#666">34%</text>
+      <text x="700" y="330" font-family="Outfit" font-size="20" fill="#2a8f9e" font-weight="600">Late Majority</text>
+      <text x="730" y="348" font-family="Work Sans" font-size="16" fill="#666">34%</text>
+      <text x="930" y="330" font-family="Outfit" font-size="20" fill="#999" font-weight="600">Laggards</text>
+      <text x="950" y="348" font-family="Work Sans" font-size="16" fill="#666">16%</text>
+      <!-- Divider lines -->
+      <line x1="230" y1="280" x2="230" y2="310" stroke="#ccc" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="400" y1="160" x2="400" y2="310" stroke="#ccc" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="650" y1="50" x2="650" y2="310" stroke="#ccc" stroke-width="1" stroke-dasharray="4"/>
+      <line x1="880" y1="200" x2="880" y2="310" stroke="#ccc" stroke-width="1" stroke-dasharray="4"/>
+    </svg>
+  </div>
+  <p class="reveal d4" style="text-align:center; font-size:26px; color:rgba(45,55,72,0.7); margin-top:16px;">Where does your organization fall? Where do YOU fall?</p>
+  <div class="speaker-notes">
+    SCRIPT: "Kini ang Technology Adoption Lifecycle ni Everett Rogers. Bell curve ang shape. Sa pinakauna, Innovators — 2.5% lang sa population, sila ang first movers. Then Early Adopters — 13.5%, they see the potential early. Early Majority — 34%, they adopt once proven. Late Majority — 34%, they adopt when everyone else does. And Laggards — 16%, they resist until forced. Question for you class: asa mo ani? Innovator ba mo sa technology? Or Late Majority? And more importantly, as future professionals, asa KINAHANGLAN mo? The answer is at least Early Adopters. Kay kung Late Majority ka sa IS, left behind na ka sa competition."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 24: IS IN ACCOUNTING ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">The AIS Connection</span>
+  <h2 class="reveal d2">IS Updates & Accounting:<br>Why This Matters for YOU</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card">
+      <h4>Traditional Accounting</h4>
+      <p>Manual journals, paper receipts, desktop software, monthly reports, physical audits</p>
+    </div>
+    <div class="card" style="background: linear-gradient(135deg, #f0fafb, #e8f8fa);">
+      <h4>Modern AIS</h4>
+      <p>Cloud accounting (Xero, QuickBooks), automated reconciliation, real-time dashboards, AI-powered audits, blockchain trails</p>
+    </div>
+  </div>
+  <div class="highlight-box reveal d4">
+    <p><strong class="accent">The accountant of 2025+</strong> is not just a number-cruncher — they are a technology-enabled strategic advisor.</p>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Now, let's connect this to YOUR field: Accounting. Sa traditional setup, manual journals, paper receipts, desktop Peachtree or QuickBooks installed sa computer. Monthly reports lang. But karon? Cloud accounting na — Xero, QuickBooks Online, accessible anywhere. Automated reconciliation — dili na manual matching. Real-time dashboards — dili na maghulat og month-end. AI-powered audits — ang AI nag-flag og anomalies automatically. Blockchain — tamper-proof transaction trails. Class, ang accountant of the future, dili lang mag-encode og numbers. You will be a TECHNOLOGY-ENABLED STRATEGIC ADVISOR. That's why this course is crucial for you."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 25: REAL WORLD CASE ===================== -->
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Case Study</span>
+    <h2 class="reveal d2">Case: Jollibee's Digital Transformation</h2>
+    <ul class="reveal d3">
+      <li><strong>Problem:</strong> Manual ordering, slow operations, paper processes</li>
+      <li><strong>Solution:</strong> Cloud-based POS, mobile app ordering, data analytics</li>
+      <li><strong>Result:</strong> Faster service, better inventory management, customer insights</li>
+      <li><strong>IS Impact:</strong> Integrated systems across 1,500+ stores worldwide</li>
+    </ul>
+    <p class="reveal d4" style="font-size:24px; color:var(--coral); margin-top:24px;"><em>Even fast-food chains need IS updates to stay competitive!</em></p>
+  </div>
+  <div class="img-side reveal d4">
+    <img src="https://images.unsplash.com/photo-1556742393-d75f468bfcb0?w=800&h=600&fit=crop" alt="Restaurant technology POS system" />
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Let me give you a local example. Jollibee — everyone loves Jollibee, right? But did you know, Jollibee underwent massive digital transformation? Before, manual ordering, paper-based inventory, slow operations. Now? Cloud-based POS systems, mobile app ordering, data analytics for demand forecasting. Result? Faster service, better stock management, ug they can analyze customer preferences across 1,500+ stores worldwide. Even ang fast-food chain, kailangan mag-update og IS. Imagine kung accountant ka sa Jollibee — kailangan nimo ma-understand tanan ni nga systems. That's the reality of modern accounting."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 26: KEY TAKEAWAYS ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Summary</span>
+  <h2 class="reveal d2">Key Takeaways for Today</h2>
+  <ul>
+    <li class="step"><strong class="accent">1.</strong> Information Systems = People + Hardware + Software + Data + Processes + Networks</li>
+    <li class="step"><strong class="accent">2.</strong> IS evolved from mainframes → PCs → internet → cloud → AI (rapid acceleration)</li>
+    <li class="step"><strong class="accent">3.</strong> Digital Transformation is about culture & process change, not just technology</li>
+    <li class="step"><strong class="accent">4.</strong> The Philippines is actively undergoing DT (GCash, e-gov, digital banking)</li>
+    <li class="step"><strong class="accent">5.</strong> As AIS students, you MUST be tech-literate to stay relevant</li>
+  </ul>
+  <div class="speaker-notes">
+    SCRIPT: "Alright class, let's recap. Five key takeaways for today. One, IS is not just computers — it's the whole ecosystem. Two, the evolution is accelerating — what took decades before, karon years na lang. Three, Digital Transformation is more than tech — it's people, culture, process. Four, right here in the Philippines, DT is happening NOW. Five, as AIS students, being tech-literate is not optional — it's REQUIRED for your career. These concepts, mao ni ang foundation for the rest of our semester. Keep these in mind."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 27: QUIZ PREVIEW ===================== -->
+<section class="slide quiz-slide">
+  <span class="eyebrow reveal d1">Session Quiz</span>
+  <h2 class="reveal d2">Quick Check: Session 1 Quiz</h2>
+  <p class="reveal d3" style="font-size:28px; margin-bottom:24px;">5-item quiz covering today's discussion. Answer on a ¼ sheet of paper.</p>
+  <div class="reveal d4">
+    <div class="quiz-option"><span>1.</span> What are the 5 main components of an Information System?</div>
+    <div class="quiz-option"><span>2.</span> Define Digital Transformation in your own words (2-3 sentences).</div>
+    <div class="quiz-option"><span>3.</span> Name the four pillars of Digital Transformation.</div>
+    <div class="quiz-option"><span>4.</span> Give 2 examples of Digital Transformation in the Philippines.</div>
+    <div class="quiz-option"><span>5.</span> What era of IS evolution are we currently in? What defines it?</div>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "Okay class, quiz time! 5 items lang, quarter sheet of paper. Number 1, enumerate the 5 main components of IS. Number 2, define Digital Transformation in your own words, 2-3 sentences. Number 3, name the four pillars of DT. Number 4, give 2 examples of DT sa Philippines. And number 5, unsa nga era of IS evolution ato na karon ug unsa ang nag-define ani. You have 10 minutes. Go!"
+  </div>
+</section>
+
+<!-- ===================== SLIDE 28: QUIZ ANSWER KEY ===================== -->
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Answer Key</span>
+  <h2 class="reveal d2">Session 1 Quiz: Answers</h2>
+  <ul style="font-size:26px;">
+    <li class="step"><strong>1.</strong> Hardware, Software, Data, People, Processes (+Networks)<br><em style="color:var(--accent);font-size:22px;">Rationale: These are the fundamental building blocks of any IS</em></li>
+    <li class="step"><strong>2.</strong> DT = using digital tech to fundamentally change business processes, culture & customer experience<br><em style="color:var(--accent);font-size:22px;">Rationale: Key is "fundamental change" not just adding technology</em></li>
+    <li class="step"><strong>3.</strong> Process, Business Model, Domain, Cultural Transformation<br><em style="color:var(--accent);font-size:22px;">Rationale: All four must work together for true DT</em></li>
+    <li class="step"><strong>4.</strong> Any 2: GCash/Maya, Digital Banks, E-Gov, Shopee/Lazada, BPO cloud adoption<br><em style="color:var(--accent);font-size:22px;">Rationale: Shows awareness of local DT landscape</em></li>
+    <li class="step"><strong>5.</strong> AI & Automation Era (2020s) — defined by GenAI, ML, IoT, blockchain<br><em style="color:var(--accent);font-size:22px;">Rationale: Current era characterized by intelligent, automated systems</em></li>
+  </ul>
+  <div class="speaker-notes">
+    SCRIPT: "Okay class, let's check your answers. Number 1 — Hardware, Software, Data, People, Processes. Bonus if you included Networks. Number 2 — accept any definition that mentions FUNDAMENTAL change using technology, dili lang adding new tools. Number 3 — Process, Business Model, Domain, Cultural. Number 4 — any two valid examples sa Philippines. Number 5 — AI and Automation Era, 2020s, characterized by generative AI, machine learning, IoT, blockchain. How did you do? If you got 4-5, excellent! 3, good. Below 3, review your notes ha."
+  </div>
+</section>
+
+<!-- ===================== SLIDE 29: NEXT SESSION PREVIEW ===================== -->
+<section class="slide content-slide" style="align-items:center; text-align:center;">
+  <span class="eyebrow reveal d1">Coming Up Next</span>
+  <h2 class="reveal d2">Session 2 Preview:<br><span class="accent">Deep Dive into Digital Transformation</span></h2>
+  <p class="reveal d3" style="font-size:30px; max-width:900px;">We'll explore DT frameworks, technology adoption strategies, real case studies of successful & failed DT initiatives, and how organizations decide what to adopt.</p>
+  <div class="highlight-box reveal d4" style="max-width:700px;">
+    <p><strong>Homework:</strong> Research one company (local or international) that underwent digital transformation. Note: What they changed, why, and the result. Be ready to share!</p>
+  </div>
+  <div class="speaker-notes">
+    SCRIPT: "For our next session, deeper ta mag-dive into Digital Transformation. We'll look at frameworks, strategies, ug real case studies — both successful AND failed. Your homework: research one company that went through DT. Pwede local or international. Note down: What did they change? Why? And what was the result? Be ready to share sa next class. Alright class, that's it for today! Any questions? See you next session. God bless!"
+  </div>
+</section>
+
+<!-- ===================== SLIDE 30: THANK YOU / END ===================== -->
+<section class="slide title-slide">
+  <span class="eyebrow reveal d1">End of Session 1</span>
+  <h1 class="reveal d2" style="font-size:72px;">Thank You!<br><span style="font-size:48px; color:var(--accent);">See You Next Session</span></h1>
+  <p class="meta reveal d3">PROFEL 2 | Updates in Information System 2</p>
+  <p class="meta reveal d4">Joshua E. Nisnisan | j.nisnisan@cfci.ph.education</p>
+  <div class="speaker-notes">
+    SCRIPT: "Thank you class! Great first session. Remember your homework — research one company with DT. If naay questions, send me a message or visit during consultation hours. Stay curious, stay updated. Serve to Thrive! See you next time. Goodbye!"
+  </div>
+</section>
+
+<script>
+// Toggle speaker notes with 'N' key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'n' || e.key === 'N') {
+    document.body.classList.toggle('notes-visible');
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1121 @@
+<!doctype html><html lang="en"><head>
+<!-- skill:chassis -->
+<style>
+/* =====================================================
+   PRESENTATION CHASSIS — style-invariant base styles
+   Fixed 1920×1080 canvas scaled to fit any viewport.
+   Customize colors, fonts, and chrome via :root tokens.
+   ===================================================== */
+
+/* ---------- Universal reset ---------- */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ---------- Theme tokens (override in your deck's CSS) ---------- */
+:root {
+    color-scheme: light;
+
+    --background:      #ffffff;
+    --foreground:      #111111;
+    --card:            #f5f5f5;
+    --card-foreground: var(--foreground);
+    --accent:          #c94a3d;
+    --accent-foreground: #ffffff;
+
+    --muted-foreground: color-mix(in srgb, var(--foreground) 55%, transparent);
+    --border:           color-mix(in srgb, var(--foreground) 12%, transparent);
+
+    --font-display: Georgia, serif;
+    --font-body: -apple-system, system-ui, sans-serif;
+    --font-mono: ui-monospace, monospace;
+
+    /* Reveal animation */
+    --reveal-duration: 0.8s;
+    --reveal-ease:     cubic-bezier(0.16, 1, 0.3, 1);
+    --reveal-distance: 28px;
+
+    /* Chrome (nav dots, keyboard hint) */
+    --nav-dot-size: 9px;
+    --nav-dot-radius: 50%;
+    --nav-dot-color: var(--foreground);
+    --nav-dot-active-color: var(--accent);
+    --nav-dot-opacity: 0.4;
+}
+
+/* ---------- Viewport lock + scroll snap ---------- */
+html, body { height: 100%; overflow-x: hidden; }
+html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
+
+html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+/* ---------- Type scale ----------
+   Fixed px sizes on a 1920×1080 canvas. The canvas is scaled to fit
+   any viewport via transform, so these sizes are absolute within the
+   design surface — no responsive units needed. */
+body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+    font-size: 36px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1 { font-size: 120px; line-height: 1.05; letter-spacing: -0.02em; }
+h2 { font-size: 64px; line-height: 1.1; letter-spacing: -0.01em; }
+h3 { font-size: 44px; line-height: 1.2; }
+.eyebrow {
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.3;
+}
+
+ul, ol { padding-left: 48px; display: flex; flex-direction: column; gap: 24px; }
+li::marker { color: var(--accent); }
+
+/* ---------- Slide structure ----------
+   .slide is the authored 1920×1080 artboard.
+   The chassis wraps it in viewport + scale layers at runtime. */
+.slide-viewport {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: block;
+    position: relative;
+    background: var(--background);
+    isolation: isolate;
+    z-index: 1;
+}
+
+.slide-scale {
+    width: 1920px;
+    height: 1080px;
+    transform: translate(-50%, -50%) scale(var(--slide-scale, 1));
+    transform-origin: center center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+}
+
+.slide {
+    width: 1920px;
+    height: 1080px;
+    padding: 80px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 60px;
+    position: relative;
+    background: transparent;
+}
+
+
+/* ---------- Image defaults ---------- */
+img, .image-container {
+    max-width: 100%;
+    max-height: 540px;
+    object-fit: contain;
+}
+
+/* ---------- Reveal primitives ----------
+   Driven by chassis.js via the Web Animations API, not CSS transitions.
+   Put .reveal* or .step on ANY element — author CSS on the same element
+   (opacity, transform, transition, filter) never conflicts, because
+   WAAPI animations live in the animation cascade origin and win over
+   normal author declarations. The .dN stagger classes below still apply
+   to theme-authored CSS animations via animation-delay.
+
+   Variants: .reveal (fade + up), .reveal-left, .reveal-right,
+   .reveal-scale, .reveal-blur. .step stays hidden until the user
+   advances forward. Don't combine .step with .reveal* on the same
+   element. */
+
+/* FOUC guard: hide reveals until chassis.js marks the document ready. */
+:root:not(.reveals-ready) .reveal,
+:root:not(.reveals-ready) .reveal-left,
+:root:not(.reveals-ready) .reveal-right,
+:root:not(.reveals-ready) .reveal-scale,
+:root:not(.reveals-ready) .reveal-blur,
+:root:not(.reveals-ready) .step {
+    opacity: 0;
+}
+:root:not(.reveals-ready) .reveal-blur { filter: blur(10px); }
+
+/* ---------- Stagger delays (.d1 … .d8) ---------- */
+.slide.visible .d1 { transition-delay: 0.10s; animation-delay: 0.10s; }
+.slide.visible .d2 { transition-delay: 0.25s; animation-delay: 0.25s; }
+.slide.visible .d3 { transition-delay: 0.40s; animation-delay: 0.40s; }
+.slide.visible .d4 { transition-delay: 0.55s; animation-delay: 0.55s; }
+.slide.visible .d5 { transition-delay: 0.70s; animation-delay: 0.70s; }
+.slide.visible .d6 { transition-delay: 0.85s; animation-delay: 0.85s; }
+.slide.visible .d7 { transition-delay: 1.00s; animation-delay: 1.00s; }
+.slide.visible .d8 { transition-delay: 1.15s; animation-delay: 1.15s; }
+
+/* ---------- Nav dots ----------
+   Default: right-center (vertical stack on right edge).
+   Override with <body data-nav="bottom | top-right | hidden">. */
+.nav-dots {
+    position: fixed;
+    right: clamp(0.6rem, 1.5vw, 1.4rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1vh, 0.8rem);
+    z-index: 50;
+}
+
+body[data-nav="bottom"] .nav-dots {
+    right: auto;
+    top: auto;
+    bottom: clamp(1rem, 2.5vh, 2rem);
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+}
+
+body[data-nav="top-right"] .nav-dots {
+    right: clamp(1rem, 2.5vw, 2rem);
+    top: clamp(1rem, 2.5vh, 2rem);
+    transform: none;
+    flex-direction: row;
+}
+
+body[data-nav="hidden"] .nav-dots { display: none; }
+
+body[data-nav="bottom"] .keyboard-hint {
+    left: clamp(1rem, 2vw, 1.5rem);
+    transform: none;
+}
+
+.nav-dots button {
+    width: var(--nav-dot-size);
+    height: var(--nav-dot-size);
+    border-radius: var(--nav-dot-radius);
+    border: 1.5px solid var(--nav-dot-color);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+    opacity: var(--nav-dot-opacity);
+}
+.nav-dots button:hover { opacity: 0.85; transform: scale(1.15); }
+.nav-dots button:focus-visible {
+    outline: 2px solid var(--nav-dot-active-color);
+    outline-offset: 3px;
+    opacity: 1;
+}
+.nav-dots button.active {
+    background: var(--nav-dot-active-color);
+    border-color: var(--nav-dot-active-color);
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+/* ---------- Keyboard hint ---------- */
+.keyboard-hint {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.2vh, 1rem);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--muted-foreground);
+    z-index: 50;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.keyboard-hint kbd {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.9em;
+    padding: 0.05em 0.4em;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--background);
+    margin: 0 0.15em;
+}
+
+/* ---------- Credit line ---------- */
+.chassis-credit {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.2vh, 1rem);
+    left: clamp(1rem, 2vw, 1.5rem);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.02em;
+    z-index: 50;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.chassis-credit .chassis-credit-emoji {
+    font-style: normal;
+    margin: 0 0.15em;
+}
+
+body[data-nav="bottom"] .chassis-credit {
+    left: auto;
+    right: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* ---------- Custom cursor ---------- */
+.chassis-cursor {
+    position: fixed;
+    top: 0; left: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: var(--accent);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    will-change: transform;
+}
+.chassis-cursor.visible { opacity: 1; }
+body.artifact-editor-editing .chassis-cursor { display: none; }
+
+@media (hover: none) {
+    .chassis-cursor { display: none; }
+}
+
+body.chassis-cursor-active:not(.artifact-editor-editing),
+body.chassis-cursor-active:not(.artifact-editor-editing) * { cursor: none; }
+
+/* ---------- Opt-outs ---------- */
+body[data-no-chrome] .nav-dots,
+body[data-no-chrome] .keyboard-hint,
+body[data-no-chrome] .chassis-credit,
+body[data-no-chrome] .chassis-cursor,
+body[data-no-chrome] .artifact-editor-toggle { display: none; }
+
+:fullscreen .keyboard-hint,
+:fullscreen .chassis-credit,
+:fullscreen .artifact-editor-toggle { display: none; }
+
+@media (hover: none) {
+    .keyboard-hint,
+    .chassis-credit { display: none; }
+}
+
+@media (max-width: 900px), (max-height: 560px) {
+    .nav-dots,
+    .keyboard-hint,
+    .chassis-credit,
+    .chassis-cursor { display: none; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.2s !important;
+    }
+    html { scroll-behavior: auto; }
+}
+
+/* ---------- Print (PDF export) ---------- */
+@media print {
+    .nav-dots, .keyboard-hint, .chassis-credit, .chassis-cursor { display: none !important; }
+    html, body { height: auto; overflow: visible; }
+    html { scroll-snap-type: none; }
+    .slide-viewport {
+        page-break-after: always;
+        break-after: page;
+        height: 100vh;
+    }
+    .slide-scale {
+        position: static !important;
+        transform: none !important;
+        width: 100% !important;
+        height: auto !important;
+    }
+    .slide {
+        width: 100% !important;
+        height: auto !important;
+    }
+}
+
+</style>
+<script>
+/* =====================================================
+   PRESENTATION CHASSIS — slide controller
+   Auto-initializes on DOMContentLoaded.
+   Exposes window.slides for programmatic control.
+   ===================================================== */
+(function () {
+    'use strict';
+
+    const REVEAL_SELECTOR = '.reveal, .reveal-left, .reveal-right, .reveal-scale, .reveal-blur';
+    const STEP_SELECTOR = '.step';
+    const ALL_REVEAL_SELECTOR = REVEAL_SELECTOR + ', ' + STEP_SELECTOR;
+    const VIEWPORT_CLASS = 'slide-viewport';
+    const SCALE_CLASS = 'slide-scale';
+
+    function _detectLang() {
+        const param = new URLSearchParams(location.search).get('lang');
+        return (param || navigator.language || 'en').slice(0, 2).toLowerCase();
+    }
+
+    class SlidePresentation {
+        constructor() {
+            this.slides = Array.from(document.querySelectorAll('.slide'));
+            if (this.slides.length === 0) return;
+
+            // Ensure every slide has an id so hashes + anchor links work.
+            // Author-defined ids are preserved; the rest get slide-N (1-indexed).
+            this.slides.forEach((slide, idx) => {
+                if (!slide.id) slide.id = `slide-${idx + 1}`;
+            });
+            this.viewports = this._setupViewports();
+            this.scales = this.viewports.map((viewport) => viewport.querySelector(`.${SCALE_CLASS}`));
+
+            // Hide every reveal element BEFORE lifting the CSS FOUC guard.
+            // After this, .reveals-ready is on <html>, so CSS no longer hides
+            // reveals — inline styles keep them hidden until JS animates them.
+            this._setupReveals();
+
+            this.navDotsContainer = this._ensureNavDots();
+            this.keyboardHint = this._ensureKeyboardHint();
+            this.credit = this._ensureCredit();
+
+            this._setupCanvasScale();
+            this._setupIntersectionObserver();
+            this._setupKeyboardNav();
+            this._setupWheelNav();
+            this._setupTouchNav();
+            this._setupViewportSync();
+            this._buildNavDots();
+            this._setupHashNav();
+            this._setupCursor();
+            this._setupPrintSettling();
+
+            // If URL has a matching hash, start there; otherwise start at slide 0.
+            const initial = this._slideIndexFromHash(location.hash);
+            this.currentSlide = initial >= 0 ? initial : 0;
+            if (this.currentSlide !== 0) {
+                this._scrollToSlide(this.currentSlide, 'auto');
+            }
+            // Reveal initial slide immediately (observer may miss it on load).
+            const first = this.slides[this.currentSlide];
+            first.classList.add('visible');
+            this._playSlideReveals(first);
+            this._updateNavDots();
+        }
+
+        /* ---------- Viewport scaffolding ----------
+           Authors write .slide as the 1920×1080 artboard. The chassis wraps
+           that authored section in viewport and scale layers. */
+        _setupViewports() {
+            return this.slides.map((slide) => {
+                const existingScale = slide.parentElement?.classList.contains(SCALE_CLASS)
+                    ? slide.parentElement
+                    : null;
+                const existingViewport = existingScale?.parentElement?.classList.contains(VIEWPORT_CLASS)
+                    ? existingScale.parentElement
+                    : null;
+                if (existingViewport) {
+                    this._syncViewportBackground(slide, existingViewport);
+                    return existingViewport;
+                }
+
+                const viewport = document.createElement('div');
+                viewport.className = VIEWPORT_CLASS;
+                const scale = document.createElement('div');
+                scale.className = SCALE_CLASS;
+
+                slide.parentNode.insertBefore(viewport, slide);
+                viewport.appendChild(scale);
+                scale.appendChild(slide);
+                this._syncViewportBackground(slide, viewport);
+
+                return viewport;
+            });
+        }
+
+        _syncViewportBackground(slide, viewport) {
+            const style = getComputedStyle(slide);
+            const hasBackgroundImage = style.backgroundImage && style.backgroundImage !== 'none';
+            const hasBackgroundColor = !['rgba(0, 0, 0, 0)', 'transparent'].includes(style.backgroundColor);
+            if (hasBackgroundImage || hasBackgroundColor) {
+                viewport.style.background = style.background;
+            } else {
+                viewport.style.background = '';
+            }
+            slide.style.background = 'transparent';
+        }
+
+        /* ---------- DOM scaffolding (auto-inserted if missing) ---------- */
+        _ensureNavDots() {
+            let el = document.getElementById('navDots');
+            if (!el) {
+                el = document.createElement('nav');
+                el.id = 'navDots';
+                el.className = 'nav-dots';
+                el.setAttribute('aria-label', 'Slide navigation');
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        _ensureKeyboardHint() {
+            let el = document.querySelector('.keyboard-hint');
+            if (!el) {
+                const i18n = {
+                    en: { navigate: 'navigate', restart: 'restart', fullscreen: 'fullscreen' },
+                    es: { navigate: 'navegar',   restart: 'inicio',   fullscreen: 'fullscreen' },
+                    fr: { navigate: 'naviguer',  restart: 'début',    fullscreen: 'fullscreen' },
+                    de: { navigate: 'blättern',  restart: 'anfang',   fullscreen: 'vollbild' },
+                    pt: { navigate: 'navegar',   restart: 'início',   fullscreen: 'fullscreen' },
+                    ja: { navigate: '移動',      restart: '先頭',      fullscreen: '全画面' },
+                    ko: { navigate: '이동',      restart: '처음',      fullscreen: '전체화면' },
+                    zh: { navigate: '翻页',      restart: '重置',      fullscreen: '全屏' },
+                    it: { navigate: 'navigare',  restart: 'inizio',   fullscreen: 'fullscreen' },
+                    nl: { navigate: 'bladeren',  restart: 'begin',    fullscreen: 'vollscherm' },
+                };
+                const t = i18n[_detectLang()] || i18n.en;
+                el = document.createElement('div');
+                el.className = 'keyboard-hint';
+                el.innerHTML = `<kbd>←</kbd> <kbd>→</kbd> ${t.navigate} &middot; <kbd>R</kbd> ${t.restart} &middot; <kbd>F</kbd> ${t.fullscreen}`;
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        _ensureCredit() {
+            let el = document.querySelector('.chassis-credit');
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'chassis-credit';
+                el.setAttribute('aria-hidden', 'true');
+                el.innerHTML = '💜 by ClickUp Brain';
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        /* ---------- Reveal engine ----------
+           Reveals are driven by the Web Animations API instead of CSS
+           transitions. This lets authors put .reveal* / .step on any
+           element: animation values live in the animation cascade origin
+           and win over normal author declarations, so no wrapper element
+           is required to isolate the chassis from author CSS.
+
+           State per slide:
+           - "hidden":  inline opacity/transform/filter from the 'from'
+                        keyframe of the variant. Set on init and on
+                        forward re-entry.
+           - "played":  animation is running or has run; the class
+                        `reveals-played` on the slide makes playback
+                        idempotent so observer re-fires (resize,
+                        fullscreen) don't restart the animation.
+           - "settled": animation canceled, inline styles cleared. Used
+                        for backward entries (we skip the animation and
+                        show the final state instantly) and for print. */
+
+        _setupReveals() {
+            // Lift the CSS FOUC guard first so getComputedStyle reads each
+            // element's natural opacity, not the guard's blanket opacity: 0.
+            // No paint occurs mid-task — inline hidden styles are applied
+            // before the browser yields, so there is no visible flash.
+            document.documentElement.classList.add('reveals-ready');
+            this.slides.forEach((slide) => {
+                slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                    el._targetOpacity = parseFloat(getComputedStyle(el).opacity);
+                    this._applyHiddenStyle(el);
+                });
+            });
+        }
+
+        _setupPrintSettling() {
+            // Browsers snapshot the document for print/PDF export. WAAPI
+            // animations don't necessarily complete in that snapshot, so
+            // settle every slide to its final state first. After printing,
+            // reset — but only for slides that haven't already been viewed,
+            // so the audience experience picks up where it left off.
+            window.addEventListener('beforeprint', () => {
+                this.slides.forEach((slide) => this._settleSlide(slide));
+            });
+        }
+
+        _readTokens() {
+            const cs = getComputedStyle(document.documentElement);
+            const rawDuration = parseFloat(cs.getPropertyValue('--reveal-duration'));
+            const duration = Number.isFinite(rawDuration) ? rawDuration * 1000 : 800;
+            const ease = cs.getPropertyValue('--reveal-ease').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
+            const distance = cs.getPropertyValue('--reveal-distance').trim() || '28px';
+            const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            return {
+                duration: reducedMotion ? 1 : duration,
+                ease,
+                distance,
+            };
+        }
+
+        _getRevealDelay(el) {
+            // Use getAttribute('class') rather than el.className: on SVG
+            // elements, `.className` is an SVGAnimatedString (not a string)
+            // and calling .match on it throws. getAttribute is uniform
+            // across HTML and SVG.
+            const classes = el.getAttribute('class') || '';
+            const m = classes.match(/\bd([1-8])\b/);
+            if (!m) return 0;
+            // Matches CSS .dN: d1 = 100ms, d2 = 250ms, +150ms per step.
+            return 100 + (parseInt(m[1], 10) - 1) * 150;
+        }
+
+        _getRevealKeyframes(el, distance) {
+            const to = el._targetOpacity ?? 1;
+            if (el.classList.contains('reveal-left')) {
+                return [
+                    { opacity: 0, transform: `translateX(calc(-1 * ${distance}))` },
+                    { opacity: to, transform: 'translateX(0)' },
+                ];
+            }
+            if (el.classList.contains('reveal-right')) {
+                return [
+                    { opacity: 0, transform: `translateX(${distance})` },
+                    { opacity: to, transform: 'translateX(0)' },
+                ];
+            }
+            if (el.classList.contains('reveal-scale')) {
+                return [
+                    { opacity: 0, transform: 'scale(0.88)' },
+                    { opacity: to, transform: 'scale(1)' },
+                ];
+            }
+            if (el.classList.contains('reveal-blur')) {
+                return [
+                    { opacity: 0, filter: 'blur(10px)' },
+                    { opacity: to, filter: 'blur(0)' },
+                ];
+            }
+            // Default: .reveal or .step (slide up + fade)
+            return [
+                { opacity: 0, transform: `translateY(${distance})` },
+                { opacity: to, transform: 'translateY(0)' },
+            ];
+        }
+
+        _applyHiddenStyle(el) {
+            const { distance } = this._readTokens();
+            const from = this._getRevealKeyframes(el, distance)[0];
+            if ('opacity' in from) el.style.opacity = from.opacity;
+            if ('transform' in from) el.style.transform = from.transform;
+            if ('filter' in from) el.style.filter = from.filter;
+        }
+
+        _clearHiddenStyle(el) {
+            el.style.opacity = '';
+            el.style.transform = '';
+            el.style.filter = '';
+        }
+
+        _cancelReveal(el) {
+            if (el._revealAnim) {
+                el._revealAnim.cancel();
+                el._revealAnim = null;
+            }
+        }
+
+        _playReveal(el, delayOverride) {
+            this._cancelReveal(el);
+            const { duration, ease, distance } = this._readTokens();
+            const delay = typeof delayOverride === 'number' ? delayOverride : this._getRevealDelay(el);
+            const keyframes = this._getRevealKeyframes(el, distance);
+            // fill: 'backwards' applies the 'from' keyframe during the
+            // stagger delay so the element stays hidden until its turn,
+            // without pinning the 'to' keyframe after the animation ends.
+            // This lets co-existing author CSS (e.g. a `.pulse` CSS
+            // animation on the same element) take over naturally once the
+            // entrance completes — otherwise our fill would mask anything
+            // the author wanted to happen post-reveal.
+            const anim = el.animate(keyframes, {
+                duration,
+                delay,
+                easing: ease,
+                fill: 'backwards',
+            });
+            el._revealAnim = anim;
+            // Safe to clear inline 'from' styles now — the animation's
+            // backwards-fill holds the element at the 'from' keyframe for
+            // the duration of any stagger delay.
+            this._clearHiddenStyle(el);
+        }
+
+        _playSlideReveals(slide) {
+            if (slide.classList.contains('reveals-played')) return;
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(REVEAL_SELECTOR).forEach((el) => this._playReveal(el));
+            // .step elements stay hidden until the user advances.
+        }
+
+        _resetSlideReveals(slide) {
+            // Forward re-entry: cancel in-flight animations, re-hide
+            // everything, and reset step state so the slide replays cleanly
+            // when the observer next adds .visible.
+            slide.classList.remove('reveals-played');
+            slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._applyHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step.step-shown').forEach((el) => el.classList.remove('step-shown'));
+        }
+
+        _settleSlide(slide) {
+            // Print / PDF export: jump to the final state with everything
+            // shown, so every step appears in the exported document.
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._clearHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step').forEach((el) => el.classList.add('step-shown'));
+        }
+
+        _rewindSlide(slide) {
+            // Backward re-entry: show reveals instantly (no replay — the
+            // viewer already saw the intro) but hide every step, so the
+            // slide is positioned at the start of its stepped content and
+            // can be stepped through again.
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._clearHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step').forEach((el) => {
+                el.classList.remove('step-shown');
+                this._cancelReveal(el);
+                this._applyHiddenStyle(el);
+            });
+        }
+
+        /* ---------- Navigation ----------
+           goTo scrolls to the target. Both forward-replay and backward-
+           rewind need to mutate the target BEFORE scrolling — while it's
+           still offscreen — so the viewer never sees the old state flash
+           into view. Resetting after the slide is in view causes a visible
+           "show then hide" blink; the IntersectionObserver fires too late
+           (80% threshold) to catch it. */
+        goTo(index) {
+            const clamped = Math.max(0, Math.min(this.slides.length - 1, index));
+            if (clamped === this.currentSlide) return;
+
+            const target = this.slides[clamped];
+            const goingForward = clamped > this.currentSlide;
+
+            if (target.classList.contains('visible')) {
+                if (goingForward) {
+                    // Forward replay: full reset so the observer can play reveals fresh.
+                    target.classList.remove('visible');
+                    this._resetSlideReveals(target);
+                } else {
+                    // Backward rewind: hide any shown steps so the slide
+                    // scrolls back in at the start of its stepped content.
+                    this._rewindSlide(target);
+                }
+            }
+
+            this._scrollToSlide(clamped, 'smooth');
+        }
+
+        _scrollToSlide(index, behavior) {
+            this.viewports[index]?.scrollIntoView({ behavior, block: 'start' });
+        }
+
+        _slideIndexFromHash(hash) {
+            if (!hash) return -1;
+            return this.slides.findIndex((s) => '#' + s.id === hash);
+        }
+
+        _syncHash() {
+            const slide = this.slides[this.currentSlide];
+            if (!slide || !slide.id) return;
+            const newHash = '#' + slide.id;
+            if (location.hash !== newHash) {
+                // replaceState — keeps the URL in sync without polluting history,
+                // so the browser back button exits the deck instead of stepping through slides.
+                try {
+                    history.replaceState(null, '', newHash);
+                } catch {
+                    // Sandboxed iframes (opaque origin, about:srcdoc) reject URL
+                    // mutation with a SecurityError. Hash sync is a nicety — an
+                    // unguarded throw here kills the observer callback before it
+                    // marks the slide visible and plays its reveals.
+                }
+            }
+        }
+
+        _setupHashNav() {
+            // React to external hash changes (anchor link clicks, back/forward if user uses pushState manually)
+            window.addEventListener('hashchange', () => {
+                const idx = this._slideIndexFromHash(location.hash);
+                if (idx >= 0 && idx !== this.currentSlide) this.goTo(idx);
+            });
+        }
+
+        /* ---------- Custom cursor ----------
+           Accent disc that follows the pointer, hidden after idle. */
+        _setupCursor() {
+            if (!matchMedia('(hover: hover)').matches) return;
+
+            const cursor = document.createElement('div');
+            cursor.className = 'chassis-cursor';
+            cursor.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(cursor);
+            document.body.classList.add('chassis-cursor-active');
+
+            const half = 16;  // matches width/height / 2 in CSS
+            const IDLE_MS = 2500;
+            let idleTimer = null;
+
+            const show = () => {
+                cursor.classList.add('visible');
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                    cursor.classList.remove('visible');
+                }, IDLE_MS);
+            };
+            const hide = () => {
+                clearTimeout(idleTimer);
+                cursor.classList.remove('visible');
+            };
+
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.transform = `translate3d(${e.clientX - half}px, ${e.clientY - half}px, 0)`;
+                show();
+            });
+            document.addEventListener('mouseleave', hide);
+            document.addEventListener('mouseenter', show);
+        }
+
+        /* ---------- Fullscreen ---------- */
+        toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.().catch(() => {});
+            } else {
+                document.exitFullscreen?.();
+            }
+        }
+
+        next() { this.goTo(this.currentSlide + 1); }
+        prev() { this.goTo(this.currentSlide - 1); }
+        first() { this.goTo(0); }
+        last() { this.goTo(this.slides.length - 1); }
+
+        /* ---------- Step-aware advance / retreat ----------
+           advance() reveals the next .step on the current slide (if any),
+           otherwise advances to the next slide. retreat() hides the last
+           revealed step, otherwise goes back to the previous slide. */
+        advance() {
+            const current = this.slides[this.currentSlide];
+            const nextStep = current?.querySelector('.step:not(.step-shown)');
+            if (nextStep) {
+                nextStep.classList.add('step-shown');
+                // No stagger on click-reveal — the user's gesture is the trigger.
+                this._playReveal(nextStep, 0);
+                return;
+            }
+            this.next();
+        }
+        retreat() {
+            const current = this.slides[this.currentSlide];
+            const shown = current?.querySelectorAll('.step.step-shown');
+            if (shown && shown.length > 0) {
+                const last = shown[shown.length - 1];
+                last.classList.remove('step-shown');
+                this._cancelReveal(last);
+                this._applyHiddenStyle(last);
+                return;
+            }
+            this.prev();
+        }
+
+        /* ---------- Intersection observer ----------
+           Fire late (>= 80% in view) so reveals play on a settled slide.
+           This is the single source of truth for active-slide state.
+
+           Forward:  add .visible, play reveals. (goTo() has already reset
+                     the target to pre-reveal state if this is a re-visit,
+                     so the animation is fresh either way.)
+           Backward: add .visible, rewind to the start of the stepped
+                     content — reveals are shown instantly (no replay) and
+                     every step is hidden again so the viewer can step
+                     through it fresh. */
+        _setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const idx = this.viewports.indexOf(entry.target);
+                    if (idx < 0) return;
+                    const slide = this.slides[idx];
+
+                    if (idx === this.currentSlide) {
+                        // Same-slide re-fire (initial load, resize, fullscreen).
+                        if (!slide.classList.contains('visible')) {
+                            slide.classList.add('visible');
+                        }
+                        // Idempotent: only plays if not already marked played.
+                        this._playSlideReveals(slide);
+                        return;
+                    }
+
+                    const goingForward = idx > this.currentSlide;
+                    this.currentSlide = idx;
+                    this._updateNavDots();
+                    this._syncHash();
+
+                    slide.classList.add('visible');
+                    if (goingForward) {
+                        this._playSlideReveals(slide);
+                    } else {
+                        this._rewindSlide(slide);
+                    }
+                });
+            }, { threshold: 0.8 });
+
+            this.viewports.forEach((viewport) => observer.observe(viewport));
+        }
+
+        /* ---------- Keyboard ---------- */
+        _setupKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                // Skip when user is editing text
+                if (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+
+                switch (e.key) {
+                    // Step-aware: consume steps first, then advance slides
+                    case 'ArrowDown':
+                    case 'ArrowRight':
+                    case ' ':
+                        e.preventDefault(); this.advance(); break;
+                    case 'ArrowUp':
+                    case 'ArrowLeft':
+                        e.preventDefault(); this.retreat(); break;
+                    // Slide-level: always skip past steps
+                    case 'PageDown':
+                        e.preventDefault(); this.next(); break;
+                    case 'PageUp':
+                        e.preventDefault(); this.prev(); break;
+                    case 'Home':
+                        e.preventDefault(); this.first(); break;
+                    case 'End':
+                        e.preventDefault(); this.last(); break;
+                    case 'f':
+                    case 'F':
+                        e.preventDefault(); this.toggleFullscreen(); break;
+                    case 'r':
+                    case 'R':
+                        e.preventDefault(); this.first(); break;
+                }
+            });
+        }
+
+        /* ---------- Wheel / trackpad ----------
+           ALWAYS preventDefault — letting any native wheel scroll through
+           races against scrollIntoView + mandatory snap, and blocks macOS
+           two-finger horizontal swipes from triggering browser back/forward.
+           Whichever axis has the larger magnitude wins, so vertical scroll
+           and horizontal trackpad swipes both drive advance/retreat. Lock
+           briefly after a gesture so trackpad inertia (continuous small
+           deltas) can't spam next(). */
+        _setupWheelNav() {
+            let locked = false;
+            window.addEventListener('wheel', (e) => {
+                if (e.ctrlKey) return;                // preserve browser pinch-zoom (ctrl+wheel)
+                e.preventDefault();                   // block native scroll + horizontal back-swipe
+                if (locked) return;
+                const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                if (Math.abs(delta) < 20) return;     // ignore tiny flicks
+                locked = true;
+                if (delta > 0) this.advance(); else this.retreat();
+                setTimeout(() => { locked = false; }, 500);
+            }, { passive: false });
+        }
+
+        /* ---------- Touch / swipe ----------
+           Horizontal swipes advance / retreat slides; left = next, right =
+           prev (matches stories / carousel conventions). Dominantly
+           vertical swipes fall through to native scroll-snap so the
+           existing top/bottom behavior keeps working. A time budget
+           rejects slow pans that were really aborted scrolls. */
+        _setupTouchNav() {
+            const MIN_DISTANCE = 50;     // px — below this is a tap or jitter
+            const MAX_TIME = 600;        // ms — slower than this is a pan, not a swipe
+            const DOMINANCE = 1.2;       // horizontal must beat vertical by this factor
+
+            let startX = 0, startY = 0, startTime = 0;
+            let tracking = false;
+
+            window.addEventListener('touchstart', (e) => {
+                if (document.body.classList.contains('artifact-editor-editing')) { tracking = false; return; }
+                if (e.touches.length !== 1) { tracking = false; return; }
+                const t = e.touches[0];
+                startX = t.clientX;
+                startY = t.clientY;
+                startTime = performance.now();
+                tracking = true;
+            }, { passive: true });
+
+            window.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                const ax = Math.abs(dx), ay = Math.abs(dy);
+                if (ax < MIN_DISTANCE) return;
+                if (ax < ay * DOMINANCE) return;
+                if (performance.now() - startTime > MAX_TIME) return;
+                if (dx < 0) this.advance(); else this.retreat();
+            }, { passive: true });
+
+            window.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+        }
+
+        /* ---------- Canvas scaling ----------
+           Each scaler holds a fixed 1920×1080 slide. Compute the
+           scale factor that fits it inside the viewport and apply via
+           CSS custom property. Runs on init, resize, and fullscreen. */
+        _setupCanvasScale() {
+            const CANVAS_W = 1920;
+            const CANVAS_H = 1080;
+            const scales = this.scales;
+
+            const update = () => {
+                const scale = Math.min(
+                    window.innerWidth / CANVAS_W,
+                    window.innerHeight / CANVAS_H
+                );
+                scales.forEach((el) => {
+                    el?.style.setProperty('--slide-scale', scale);
+                });
+            };
+
+            update();
+            window.addEventListener('resize', update);
+            document.addEventListener('fullscreenchange', () => {
+                requestAnimationFrame(update);
+            });
+        }
+
+        /* ---------- Viewport sync ----------
+           Resize / fullscreenchange → realign current slide. Each slide is
+           100vh, so a viewport height change leaves the existing scroll
+           position out of alignment with the slide top; scroll-snap doesn't
+           re-snap on its own. */
+        _setupViewportSync() {
+            const realign = () => {
+                requestAnimationFrame(() => {
+                    this._scrollToSlide(this.currentSlide, 'auto');
+                });
+            };
+            window.addEventListener('resize', realign);
+            document.addEventListener('fullscreenchange', realign);
+        }
+
+        /* ---------- Nav dots ---------- */
+        _buildNavDots() {
+            // Clear first — prevents duplicates when DOM is re-serialized/re-opened
+            this.navDotsContainer.innerHTML = '';
+            this.slides.forEach((slide, idx) => {
+                const dot = document.createElement('button');
+                dot.setAttribute('aria-label', `Go to slide ${idx + 1}`);
+                if (idx === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => this.goTo(idx));
+                this.navDotsContainer.appendChild(dot);
+            });
+        }
+
+        _updateNavDots() {
+            const dots = this.navDotsContainer.querySelectorAll('button');
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === this.currentSlide);
+            });
+        }
+    }
+
+    /* ---------- Auto-init ---------- */
+    function init() {
+        // Each slide canvas is its own editable host for the inline editor.
+        document.querySelectorAll('.slide').forEach(function (el) {
+            el.classList.add('artifact-editable');
+        });
+        window.slides = new SlidePresentation();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chassis --><meta charset="utf-8"><title>Week 9 Session 2 | Data Visualization & Dashboard Design</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Work+Sans:wght@400;500;600&display=swap"><style>:root{--bg:#f9f7f4;--fg:#293746;--accent:#2a8f9e;--coral:#e07a5f;--card:#fff;--font-display:Outfit,sans-serif;--font-body:'Work Sans',sans-serif}.slide{background:var(--bg);padding:80px;display:flex;flex-direction:column;justify-content:center}h1,h2,h3{font-family:var(--font-display);color:var(--fg)}h1{font-size:76px;line-height:1.04}h2{font-size:48px;margin:12px 0 26px}p,li{font-family:var(--font-body);color:var(--fg);font-size:26px;line-height:1.46}ul{padding-left:34px}.ey{font:600 19px var(--font-body);color:var(--coral);text-transform:uppercase;letter-spacing:.08em}.hero,.sec{align-items:center;text-align:center}.hero{background:linear-gradient(135deg,#effafa,#fff5f0)}.hero .sub{color:var(--accent);font-size:31px}.sec{background:linear-gradient(135deg,var(--accent),#176875)}.sec h1,.sec p{color:#fff}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}.cd{background:var(--card);border:1px solid #e2eaec;border-radius:15px;padding:24px}.cd h3{font-size:25px;color:var(--accent);margin:0 0 8px}.cd p{font-size:20px;margin:0}.tb{width:100%;border-collapse:collapse}.tb th{background:var(--accent);color:#fff;text-align:left;padding:13px;font:600 19px var(--font-display)}.tb td{background:#fff;border-bottom:1px solid #e5ebed;padding:12px;font-size:20px}.tb tr:nth-child(even) td{background:#f6fafb}.co{background:#effafa;border-left:5px solid var(--accent);padding:20px 26px;border-radius:0 13px 13px 0}.co p{font-size:22px;margin:0}.notes{display:none}.notes-visible .notes{display:block;position:absolute;bottom:0;left:0;right:0;background:#293746;color:#fff;padding:18px 30px;font:15px/1.5 var(--font-body);max-height:250px;overflow:auto}</style></head><body data-nav="bottom">
+
+<section class="slide hero"><span class="ey reveal d1">Module 3 | Week 9 Session 2</span><h1 class="reveal d2">Data Visualization &<br>Dashboard Design</h1><p class="sub reveal d3">Choosing the right chart, designing for clarity, and building trust</p><p class="reveal d4">BS AIS | Joshua E. Nisnisan</p><div class="notes">SCRIPT: "Welcome back! Last session, BI foundations. Karon, visualization. A number is data. A chart is communication. We will learn which chart works for which data, how to avoid misleading visuals, and the principles that make dashboards trustworthy and actionable."</div></section>
+
+<section class="slide"><span class="ey">Learning Targets</span><h2>By the end of this session you can:</h2><ul><li>Choose appropriate chart types for different data relationships</li><li>Apply visualization principles: clarity, accuracy, and context</li><li>Identify common chart mistakes and misleading patterns</li><li>Design a dashboard layout with visual hierarchy</li><li>Explain how visualization builds or destroys trust in data</li></ul><div class="notes">SCRIPT: "Visualization is a SKILL, not just a feature in software. Bad charts mislead. Good charts reveal truth quickly. As accountants preparing reports for management, this skill directly affects decision quality."</div></section>
+
+<section class="slide sec"><h1>01<br>Chart selection</h1><p>Match the visual to the relationship in your data</p><div class="notes">SCRIPT: "The first question is not 'what looks cool?' It is 'what relationship am I showing?' Comparison, trend, composition, distribution, or relationship? Each has optimal chart types."</div></section>
+
+<section class="slide"><span class="ey">Chart Selection Guide</span><h2>What relationship are you showing?</h2><table class="tb"><tr><th>Relationship</th><th>Best charts</th><th>Accounting example</th></tr><tr><td><b>Comparison</b></td><td>Bar chart, column chart</td><td>Revenue by branch, budget vs actual</td></tr><tr><td><b>Trend over time</b></td><td>Line chart, area chart</td><td>Monthly sales, cash flow over 12 months</td></tr><tr><td><b>Composition</b></td><td>Stacked bar, pie (max 5 slices)</td><td>Expense breakdown, revenue by segment</td></tr><tr><td><b>Distribution</b></td><td>Histogram, box plot</td><td>Invoice amounts, payment timing</td></tr><tr><td><b>Correlation</b></td><td>Scatter plot</td><td>Spending vs revenue, headcount vs output</td></tr><tr><td><b>Single KPI</b></td><td>Card / big number</td><td>Total revenue, cash balance, overdue count</td></tr></table><div class="notes">SCRIPT: "This table is your cheat sheet. Before building any chart, ask: 'Am I comparing things, showing change over time, showing parts of a whole, or showing a pattern?' That answer picks your chart type."</div></section>
+
+<section class="slide"><span class="ey">Bar & Column Charts</span><h2>The workhorse of comparison</h2><div class="g2"><div class="cd"><h3>When to use</h3><p>Comparing categories. Branch performance, product revenue, budget vs actual. Works with 3-15 categories.</p></div><div class="cd"><h3>Best practices</h3><p>• Start Y-axis at zero<br>• Sort by value (largest first) unless alphabetical is needed<br>• Use horizontal bars for long category names<br>• One color unless highlighting a specific item</p></div></div><div class="co"><p><b>Common mistake:</b> Starting the Y-axis at a non-zero value makes small differences look dramatic. Always start at zero for bar/column charts.</p></div><div class="notes">SCRIPT: "Bar charts are simple but powerful. The key rule: start Y-axis at zero. If you start at ₱900K instead of zero, a difference between ₱950K and ₱1M looks massive — but it's only 5%. That's misleading. Always zero baseline for bars."</div></section>
+
+<section class="slide"><span class="ey">Line Charts</span><h2>The storyteller for trends</h2><div class="g2"><div class="cd"><h3>When to use</h3><p>Showing change over continuous time. Monthly revenue, daily cash, quarterly growth. Best with 5+ time periods.</p></div><div class="cd"><h3>Best practices</h3><p>• Use consistent time intervals<br>• Limit to 3-4 lines maximum<br>• Label directly instead of legends when possible<br>• Show reference lines for targets or averages</p></div></div><div class="co"><p><b>Common mistake:</b> Too many lines on one chart. If the viewer cannot distinguish them, split into multiple charts or use a small-multiples layout.</p></div><div class="notes">SCRIPT: "Line charts are for TIME. Dili siya for comparing categories. If you have 10 product lines over time, that's 10 lines — too many. Use small multiples: separate small charts for each, same scale, easy to compare."</div></section>
+
+<section class="slide"><span class="ey">Pie Charts</span><h2>Use sparingly and carefully</h2><div class="g2"><div class="cd"><h3>When acceptable</h3><p>Showing parts of a whole with MAX 5 slices. The total must equal 100%. Example: revenue by 4 business segments.</p></div><div class="cd"><h3>When to avoid</h3><p>• More than 5 categories (use stacked bar instead)<br>• Comparing values (humans are bad at comparing angles)<br>• Showing change over time<br>• Multiple pie charts side by side</p></div></div><div class="co"><p><b>Professional tip:</b> Many data visualization experts avoid pie charts entirely. A horizontal bar chart sorted by value is almost always clearer.</p></div><div class="notes">SCRIPT: "I'll be honest: most experienced data professionals avoid pie charts. Why? Because humans are terrible at comparing slice sizes. A bar chart is almost always clearer. If you use pie, maximum 5 slices and the total must be 100%."</div></section>
+
+<section class="slide"><span class="ey">Tables</span><h2>When exact numbers matter more than shape</h2><ul><li><b>Use tables when:</b> The audience needs exact values, not patterns</li><li><b>Financial statements:</b> Income statement, balance sheet, trial balance</li><li><b>Best practices:</b> Right-align numbers, use thousand separators, highlight variances</li><li><b>Conditional formatting:</b> Color-code positive/negative, above/below target</li><li><b>Keep it small:</b> If more than 20 rows are needed, add filtering or drill-down</li></ul><div class="notes">SCRIPT: "Tables are not inferior to charts — they serve a different purpose. When an auditor needs the EXACT number, a chart is insufficient. When a manager needs to spot the TREND, a table is slow. Use both where appropriate."</div></section>
+
+<section class="slide sec"><h1>02<br>Design principles</h1><p>Clarity, accuracy, and context</p><div class="notes">SCRIPT: "Good visualization follows principles. We don't just make pretty pictures. We communicate truth clearly."</div></section>
+
+<section class="slide"><span class="ey">Principle 1</span><h2>Data-ink ratio: maximize data, minimize decoration</h2><ul><li>Remove unnecessary gridlines, borders, and 3D effects</li><li>Use color purposefully, not decoratively</li><li>Every pixel should represent data or essential context</li><li>White space helps readability — don't fill every corner</li><li>Ask: "If I remove this element, does the message change?"</li></ul><div class="co"><p><b>Edward Tufte's rule:</b> "Above all else, show the data."</p></div><div class="notes">SCRIPT: "Edward Tufte, the father of data visualization, introduced the data-ink ratio concept. Maximize data, minimize non-data ink. Remove gridlines that don't help. Remove 3D effects that distort. Remove borders around charts. Let the DATA be the focus."</div></section>
+
+<section class="slide"><span class="ey">Principle 2</span><h2>Color with purpose</h2><div class="g2"><div class="cd"><h3>Use color to:</h3><p>• Highlight the most important data point<br>• Show categories consistently<br>• Indicate status (green/yellow/red for targets)<br>• Guide attention to exceptions</p></div><div class="cd"><h3>Avoid:</h3><p>• Rainbow palettes with no meaning<br>• Red/green for colorblind users (use shapes too)<br>• More than 5-6 distinct colors per chart<br>• Dark backgrounds that strain eyes</p></div></div><div class="notes">SCRIPT: "Color is a signal. If everything is colorful, nothing stands out. Use muted colors for context and one strong color for the key message. Remember: 8% of men are colorblind, so never rely on color alone. Add shapes or labels."</div></section>
+
+<section class="slide"><span class="ey">Principle 3</span><h2>Context makes data meaningful</h2><ul><li><b>Comparison:</b> Show vs. last year, vs. budget, vs. target</li><li><b>Trend:</b> Is the current value going up or down?</li><li><b>Benchmark:</b> How does this compare to industry average?</li><li><b>Labels:</b> Title, axis labels, data source, last updated</li><li><b>Annotation:</b> Call out significant events or anomalies</li></ul><div class="notes">SCRIPT: "A number alone is meaningless. '₱4.5M revenue' — is that good or bad? Compared to what? Add context: vs. target (₱4M, so we're ahead), vs. last year (₱3.8M, so we grew), vs. budget (₱5M, so we're behind). Context creates meaning."</div></section>
+
+<section class="slide"><span class="ey">Common Mistakes</span><h2>Misleading visualizations to avoid</h2><div class="g3"><div class="cd"><h3>Truncated axis</h3><p>Bar chart not starting at zero exaggerates differences.</p></div><div class="cd"><h3>Cherry-picked time</h3><p>Showing only favorable periods hides the full story.</p></div><div class="cd"><h3>Dual Y-axes</h3><p>Two scales on one chart create false correlations.</p></div><div class="cd"><h3>3D effects</h3><p>Distort proportions. Back slices in pie appear smaller.</p></div><div class="cd"><h3>Missing labels</h3><p>No source, date, or definition. Unverifiable claim.</p></div><div class="cd"><h3>Too much data</h3><p>50 series or 100 data points. No one can read it.</p></div></div><div class="notes">SCRIPT: "These are not just aesthetic issues — they're INTEGRITY issues. As accountants, presenting misleading data (even unintentionally) damages credibility and can lead to bad decisions. Always ask: could someone misinterpret this?"</div></section>
+
+<section class="slide"><span class="ey">Dashboard Layout</span><h2>Information hierarchy for one screen</h2><ul><li><b>Top-left:</b> Most important KPIs (big numbers/cards)</li><li><b>Top-right:</b> Status indicators or alerts</li><li><b>Middle:</b> Trend charts showing change over time</li><li><b>Bottom:</b> Detail tables or comparison charts</li><li><b>Filters:</b> Date range, branch, category at the top</li><li><b>Maximum:</b> 6-8 visual elements per dashboard page</li></ul><div class="notes">SCRIPT: "People read left-to-right, top-to-bottom. Put the MOST IMPORTANT information top-left. Think like a newspaper: headline first, details below. Maximum 6-8 charts per page — if you need more, create multiple pages."</div></section>
+
+<section class="slide"><span class="ey">Dashboard for CFO</span><h2>Example: executive financial dashboard</h2><div class="g2"><div class="cd"><h3>Top row (cards)</h3><p>Revenue MTD, Net Income, Cash Balance, A/R Overdue — each with vs. target indicator</p></div><div class="cd"><h3>Middle (trends)</h3><p>Revenue trend (line), Cash flow forecast (area), Budget vs Actual (bar)</p></div><div class="cd"><h3>Bottom (details)</h3><p>Top 5 overdue customers table, Expense by category bar, Branch comparison</p></div><div class="cd"><h3>Filters</h3><p>Period selector, branch filter, segment filter — applied globally to all charts</p></div></div><div class="notes">SCRIPT: "A CFO dashboard should answer in 10 seconds: Are we making money? Do we have cash? Are we on budget? Where are the problems? That's it. Details are for drill-down, not the main view."</div></section>
+
+<section class="slide"><span class="ey">Walkthrough</span><h2>Building a simple dashboard (generic steps)</h2><ul><li><b>1. Connect data source:</b> Import CSV, connect to cloud database, or link spreadsheet</li><li><b>2. Clean and model:</b> Remove blanks, fix types, create relationships between tables</li><li><b>3. Create measures:</b> Define calculations (total revenue, running average, YoY growth)</li><li><b>4. Build visuals:</b> Add charts one by one, test with real data</li><li><b>5. Add context:</b> Titles, filters, comparison lines, conditional formatting</li><li><b>6. Review:</b> Check accuracy against source, test with stakeholders</li></ul><div class="notes">SCRIPT: "This process works regardless of tool — Power BI, Looker, Tableau. The sequence is: data first, model second, visuals third, context fourth, review last. Never start with the chart before understanding the data."</div></section>
+
+<section class="slide"><span class="ey">Trust Indicators</span><h2>Making dashboards trustworthy</h2><div class="g3"><div class="cd"><h3>Data source</h3><p>Show where the data comes from.</p></div><div class="cd"><h3>Last refresh</h3><p>Show when data was last updated.</p></div><div class="cd"><h3>Definitions</h3><p>Define key terms (what's included in 'revenue'?).</p></div><div class="cd"><h3>Owner</h3><p>Who maintains this dashboard?</p></div><div class="cd"><h3>Reconciliation</h3><p>Does the dashboard agree with official reports?</p></div><div class="cd"><h3>Version</h3><p>Mark draft vs published dashboards clearly.</p></div></div><div class="notes">SCRIPT: "If a manager sees a number and asks 'where did this come from?' and nobody can answer, trust is broken. Always show: data source, last refresh time, and definition. That's the minimum for a trustworthy dashboard."</div></section>
+
+<section class="slide"><span class="ey">Activity</span><h2>Dashboard critique exercise</h2><ul><li>I will show three sample dashboard screenshots (hypothetical)</li><li>For each, identify:<ul><li>What chart type is used and is it appropriate?</li><li>What's missing (context, labels, source)?</li><li>What could mislead the viewer?</li><li>One specific improvement suggestion</li></ul></li><li>Discuss in pairs, then share with the class</li></ul><div class="notes">SCRIPT: "This is a critique exercise. Look at sample dashboards and find problems. What's misleading? What's missing? What's confusing? Being critical of visualizations makes you a better builder."</div></section>
+
+<section class="slide"><span class="ey">Tools Practice</span><h2>Getting started with Power BI (free)</h2><ul><li><b>Download:</b> Power BI Desktop is FREE from Microsoft</li><li><b>Import:</b> Start with a CSV or Excel file of sample data</li><li><b>First visual:</b> Drag a field to the canvas, choose chart type</li><li><b>Practice:</b> Use sample datasets (financial sample from Microsoft)</li><li><b>Resources:</b> Microsoft Learn, YouTube tutorials, r/PowerBI</li></ul><div class="co"><p><b>Homework:</b> Download Power BI Desktop (free). Import the Microsoft financial sample. Create ONE chart showing revenue by segment. Screenshot and bring next session.</p></div><div class="notes">SCRIPT: "I encourage everyone to download Power BI Desktop — it's free. Microsoft provides sample financial data. Try creating one simple chart: revenue by segment, bar chart. Bring a screenshot next session. This is the start of your BI skills."</div></section>
+
+<section class="slide"><span class="ey">Recap</span><h2>Visualization principles to remember</h2><ul><li>Choose charts based on the DATA RELATIONSHIP, not aesthetics</li><li>Start bar chart axes at zero. Limit pie charts to 5 slices.</li><li>Use color with purpose — highlight, don't decorate</li><li>Context (comparison, trend, benchmark) makes data meaningful</li><li>Dashboard layout: most important top-left, max 6-8 visuals</li><li>Trust = source + refresh time + definitions + reconciliation</li></ul><div class="notes">SCRIPT: "Visualization is communication. Every chart you create should answer a question clearly and honestly. When in doubt, simplify. A clear simple chart beats a complex confusing one every time."</div></section>
+
+<section class="slide sec"><h1>Next session<br>AI & Machine Learning for Accountants</h1><p>Understanding intelligent systems without needing to code them</p><div class="notes">SCRIPT: "Next session, we enter AI territory. Not to become data scientists, but to understand how AI assists accounting: anomaly detection, forecasting, document processing, and decision support. See you!"</div></section>
+
+<script>document.addEventListener('keydown',e=>{if(e.key==='n'||e.key==='N')document.body.classList.toggle('notes-visible')})</script></body></html>

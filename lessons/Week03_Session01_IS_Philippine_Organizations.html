@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- skill:chassis -->
+<style>
+/* =====================================================
+   PRESENTATION CHASSIS — style-invariant base styles
+   Fixed 1920×1080 canvas scaled to fit any viewport.
+   Customize colors, fonts, and chrome via :root tokens.
+   ===================================================== */
+
+/* ---------- Universal reset ---------- */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ---------- Theme tokens (override in your deck's CSS) ---------- */
+:root {
+    color-scheme: light;
+
+    --background:      #ffffff;
+    --foreground:      #111111;
+    --card:            #f5f5f5;
+    --card-foreground: var(--foreground);
+    --accent:          #c94a3d;
+    --accent-foreground: #ffffff;
+
+    --muted-foreground: color-mix(in srgb, var(--foreground) 55%, transparent);
+    --border:           color-mix(in srgb, var(--foreground) 12%, transparent);
+
+    --font-display: Georgia, serif;
+    --font-body: -apple-system, system-ui, sans-serif;
+    --font-mono: ui-monospace, monospace;
+
+    /* Reveal animation */
+    --reveal-duration: 0.8s;
+    --reveal-ease:     cubic-bezier(0.16, 1, 0.3, 1);
+    --reveal-distance: 28px;
+
+    /* Chrome (nav dots, keyboard hint) */
+    --nav-dot-size: 9px;
+    --nav-dot-radius: 50%;
+    --nav-dot-color: var(--foreground);
+    --nav-dot-active-color: var(--accent);
+    --nav-dot-opacity: 0.4;
+}
+
+/* ---------- Viewport lock + scroll snap ---------- */
+html, body { height: 100%; overflow-x: hidden; }
+html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
+
+html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+/* ---------- Type scale ----------
+   Fixed px sizes on a 1920×1080 canvas. The canvas is scaled to fit
+   any viewport via transform, so these sizes are absolute within the
+   design surface — no responsive units needed. */
+body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+    font-size: 36px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1 { font-size: 120px; line-height: 1.05; letter-spacing: -0.02em; }
+h2 { font-size: 64px; line-height: 1.1; letter-spacing: -0.01em; }
+h3 { font-size: 44px; line-height: 1.2; }
+.eyebrow {
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.3;
+}
+
+ul, ol { padding-left: 48px; display: flex; flex-direction: column; gap: 24px; }
+li::marker { color: var(--accent); }
+
+/* ---------- Slide structure ----------
+   .slide is the authored 1920×1080 artboard.
+   The chassis wraps it in viewport + scale layers at runtime. */
+.slide-viewport {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    display: block;
+    position: relative;
+    background: var(--background);
+    isolation: isolate;
+    z-index: 1;
+}
+
+.slide-scale {
+    width: 1920px;
+    height: 1080px;
+    transform: translate(-50%, -50%) scale(var(--slide-scale, 1));
+    transform-origin: center center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+}
+
+.slide {
+    width: 1920px;
+    height: 1080px;
+    padding: 80px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 60px;
+    position: relative;
+    background: transparent;
+}
+
+
+/* ---------- Image defaults ---------- */
+img, .image-container {
+    max-width: 100%;
+    max-height: 540px;
+    object-fit: contain;
+}
+
+/* ---------- Reveal primitives ----------
+   Driven by chassis.js via the Web Animations API, not CSS transitions.
+   Put .reveal* or .step on ANY element — author CSS on the same element
+   (opacity, transform, transition, filter) never conflicts, because
+   WAAPI animations live in the animation cascade origin and win over
+   normal author declarations. The .dN stagger classes below still apply
+   to theme-authored CSS animations via animation-delay.
+
+   Variants: .reveal (fade + up), .reveal-left, .reveal-right,
+   .reveal-scale, .reveal-blur. .step stays hidden until the user
+   advances forward. Don't combine .step with .reveal* on the same
+   element. */
+
+/* FOUC guard: hide reveals until chassis.js marks the document ready. */
+:root:not(.reveals-ready) .reveal,
+:root:not(.reveals-ready) .reveal-left,
+:root:not(.reveals-ready) .reveal-right,
+:root:not(.reveals-ready) .reveal-scale,
+:root:not(.reveals-ready) .reveal-blur,
+:root:not(.reveals-ready) .step {
+    opacity: 0;
+}
+:root:not(.reveals-ready) .reveal-blur { filter: blur(10px); }
+
+/* ---------- Stagger delays (.d1 … .d8) ---------- */
+.slide.visible .d1 { transition-delay: 0.10s; animation-delay: 0.10s; }
+.slide.visible .d2 { transition-delay: 0.25s; animation-delay: 0.25s; }
+.slide.visible .d3 { transition-delay: 0.40s; animation-delay: 0.40s; }
+.slide.visible .d4 { transition-delay: 0.55s; animation-delay: 0.55s; }
+.slide.visible .d5 { transition-delay: 0.70s; animation-delay: 0.70s; }
+.slide.visible .d6 { transition-delay: 0.85s; animation-delay: 0.85s; }
+.slide.visible .d7 { transition-delay: 1.00s; animation-delay: 1.00s; }
+.slide.visible .d8 { transition-delay: 1.15s; animation-delay: 1.15s; }
+
+/* ---------- Nav dots ----------
+   Default: right-center (vertical stack on right edge).
+   Override with <body data-nav="bottom | top-right | hidden">. */
+.nav-dots {
+    position: fixed;
+    right: clamp(0.6rem, 1.5vw, 1.4rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1vh, 0.8rem);
+    z-index: 50;
+}
+
+body[data-nav="bottom"] .nav-dots {
+    right: auto;
+    top: auto;
+    bottom: clamp(1rem, 2.5vh, 2rem);
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+}
+
+body[data-nav="top-right"] .nav-dots {
+    right: clamp(1rem, 2.5vw, 2rem);
+    top: clamp(1rem, 2.5vh, 2rem);
+    transform: none;
+    flex-direction: row;
+}
+
+body[data-nav="hidden"] .nav-dots { display: none; }
+
+body[data-nav="bottom"] .keyboard-hint {
+    left: clamp(1rem, 2vw, 1.5rem);
+    transform: none;
+}
+
+.nav-dots button {
+    width: var(--nav-dot-size);
+    height: var(--nav-dot-size);
+    border-radius: var(--nav-dot-radius);
+    border: 1.5px solid var(--nav-dot-color);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+    opacity: var(--nav-dot-opacity);
+}
+.nav-dots button:hover { opacity: 0.85; transform: scale(1.15); }
+.nav-dots button:focus-visible {
+    outline: 2px solid var(--nav-dot-active-color);
+    outline-offset: 3px;
+    opacity: 1;
+}
+.nav-dots button.active {
+    background: var(--nav-dot-active-color);
+    border-color: var(--nav-dot-active-color);
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+/* ---------- Keyboard hint ---------- */
+.keyboard-hint {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.2vh, 1rem);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--muted-foreground);
+    z-index: 50;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.keyboard-hint kbd {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.9em;
+    padding: 0.05em 0.4em;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--background);
+    margin: 0 0.15em;
+}
+
+/* ---------- Credit line ---------- */
+.chassis-credit {
+    position: fixed;
+    bottom: clamp(0.6rem, 1.2vh, 1rem);
+    left: clamp(1rem, 2vw, 1.5rem);
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--muted-foreground);
+    letter-spacing: 0.02em;
+    z-index: 50;
+    opacity: 0.7;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+.chassis-credit .chassis-credit-emoji {
+    font-style: normal;
+    margin: 0 0.15em;
+}
+
+body[data-nav="bottom"] .chassis-credit {
+    left: auto;
+    right: clamp(1rem, 2vw, 1.5rem);
+}
+
+/* ---------- Custom cursor ---------- */
+.chassis-cursor {
+    position: fixed;
+    top: 0; left: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    pointer-events: none;
+    background: var(--accent);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    will-change: transform;
+}
+.chassis-cursor.visible { opacity: 1; }
+body.artifact-editor-editing .chassis-cursor { display: none; }
+
+@media (hover: none) {
+    .chassis-cursor { display: none; }
+}
+
+body.chassis-cursor-active:not(.artifact-editor-editing),
+body.chassis-cursor-active:not(.artifact-editor-editing) * { cursor: none; }
+
+/* ---------- Opt-outs ---------- */
+body[data-no-chrome] .nav-dots,
+body[data-no-chrome] .keyboard-hint,
+body[data-no-chrome] .chassis-credit,
+body[data-no-chrome] .chassis-cursor,
+body[data-no-chrome] .artifact-editor-toggle { display: none; }
+
+:fullscreen .keyboard-hint,
+:fullscreen .chassis-credit,
+:fullscreen .artifact-editor-toggle { display: none; }
+
+@media (hover: none) {
+    .keyboard-hint,
+    .chassis-credit { display: none; }
+}
+
+@media (max-width: 900px), (max-height: 560px) {
+    .nav-dots,
+    .keyboard-hint,
+    .chassis-credit,
+    .chassis-cursor { display: none; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.2s !important;
+    }
+    html { scroll-behavior: auto; }
+}
+
+/* ---------- Print (PDF export) ---------- */
+@media print {
+    .nav-dots, .keyboard-hint, .chassis-credit, .chassis-cursor { display: none !important; }
+    html, body { height: auto; overflow: visible; }
+    html { scroll-snap-type: none; }
+    .slide-viewport {
+        page-break-after: always;
+        break-after: page;
+        height: 100vh;
+    }
+    .slide-scale {
+        position: static !important;
+        transform: none !important;
+        width: 100% !important;
+        height: auto !important;
+    }
+    .slide {
+        width: 100% !important;
+        height: auto !important;
+    }
+}
+
+</style>
+<script>
+/* =====================================================
+   PRESENTATION CHASSIS — slide controller
+   Auto-initializes on DOMContentLoaded.
+   Exposes window.slides for programmatic control.
+   ===================================================== */
+(function () {
+    'use strict';
+
+    const REVEAL_SELECTOR = '.reveal, .reveal-left, .reveal-right, .reveal-scale, .reveal-blur';
+    const STEP_SELECTOR = '.step';
+    const ALL_REVEAL_SELECTOR = REVEAL_SELECTOR + ', ' + STEP_SELECTOR;
+    const VIEWPORT_CLASS = 'slide-viewport';
+    const SCALE_CLASS = 'slide-scale';
+
+    function _detectLang() {
+        const param = new URLSearchParams(location.search).get('lang');
+        return (param || navigator.language || 'en').slice(0, 2).toLowerCase();
+    }
+
+    class SlidePresentation {
+        constructor() {
+            this.slides = Array.from(document.querySelectorAll('.slide'));
+            if (this.slides.length === 0) return;
+
+            // Ensure every slide has an id so hashes + anchor links work.
+            // Author-defined ids are preserved; the rest get slide-N (1-indexed).
+            this.slides.forEach((slide, idx) => {
+                if (!slide.id) slide.id = `slide-${idx + 1}`;
+            });
+            this.viewports = this._setupViewports();
+            this.scales = this.viewports.map((viewport) => viewport.querySelector(`.${SCALE_CLASS}`));
+
+            // Hide every reveal element BEFORE lifting the CSS FOUC guard.
+            // After this, .reveals-ready is on <html>, so CSS no longer hides
+            // reveals — inline styles keep them hidden until JS animates them.
+            this._setupReveals();
+
+            this.navDotsContainer = this._ensureNavDots();
+            this.keyboardHint = this._ensureKeyboardHint();
+            this.credit = this._ensureCredit();
+
+            this._setupCanvasScale();
+            this._setupIntersectionObserver();
+            this._setupKeyboardNav();
+            this._setupWheelNav();
+            this._setupTouchNav();
+            this._setupViewportSync();
+            this._buildNavDots();
+            this._setupHashNav();
+            this._setupCursor();
+            this._setupPrintSettling();
+
+            // If URL has a matching hash, start there; otherwise start at slide 0.
+            const initial = this._slideIndexFromHash(location.hash);
+            this.currentSlide = initial >= 0 ? initial : 0;
+            if (this.currentSlide !== 0) {
+                this._scrollToSlide(this.currentSlide, 'auto');
+            }
+            // Reveal initial slide immediately (observer may miss it on load).
+            const first = this.slides[this.currentSlide];
+            first.classList.add('visible');
+            this._playSlideReveals(first);
+            this._updateNavDots();
+        }
+
+        /* ---------- Viewport scaffolding ----------
+           Authors write .slide as the 1920×1080 artboard. The chassis wraps
+           that authored section in viewport and scale layers. */
+        _setupViewports() {
+            return this.slides.map((slide) => {
+                const existingScale = slide.parentElement?.classList.contains(SCALE_CLASS)
+                    ? slide.parentElement
+                    : null;
+                const existingViewport = existingScale?.parentElement?.classList.contains(VIEWPORT_CLASS)
+                    ? existingScale.parentElement
+                    : null;
+                if (existingViewport) {
+                    this._syncViewportBackground(slide, existingViewport);
+                    return existingViewport;
+                }
+
+                const viewport = document.createElement('div');
+                viewport.className = VIEWPORT_CLASS;
+                const scale = document.createElement('div');
+                scale.className = SCALE_CLASS;
+
+                slide.parentNode.insertBefore(viewport, slide);
+                viewport.appendChild(scale);
+                scale.appendChild(slide);
+                this._syncViewportBackground(slide, viewport);
+
+                return viewport;
+            });
+        }
+
+        _syncViewportBackground(slide, viewport) {
+            const style = getComputedStyle(slide);
+            const hasBackgroundImage = style.backgroundImage && style.backgroundImage !== 'none';
+            const hasBackgroundColor = !['rgba(0, 0, 0, 0)', 'transparent'].includes(style.backgroundColor);
+            if (hasBackgroundImage || hasBackgroundColor) {
+                viewport.style.background = style.background;
+            } else {
+                viewport.style.background = '';
+            }
+            slide.style.background = 'transparent';
+        }
+
+        /* ---------- DOM scaffolding (auto-inserted if missing) ---------- */
+        _ensureNavDots() {
+            let el = document.getElementById('navDots');
+            if (!el) {
+                el = document.createElement('nav');
+                el.id = 'navDots';
+                el.className = 'nav-dots';
+                el.setAttribute('aria-label', 'Slide navigation');
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        _ensureKeyboardHint() {
+            let el = document.querySelector('.keyboard-hint');
+            if (!el) {
+                const i18n = {
+                    en: { navigate: 'navigate', restart: 'restart', fullscreen: 'fullscreen' },
+                    es: { navigate: 'navegar',   restart: 'inicio',   fullscreen: 'fullscreen' },
+                    fr: { navigate: 'naviguer',  restart: 'début',    fullscreen: 'fullscreen' },
+                    de: { navigate: 'blättern',  restart: 'anfang',   fullscreen: 'vollbild' },
+                    pt: { navigate: 'navegar',   restart: 'início',   fullscreen: 'fullscreen' },
+                    ja: { navigate: '移動',      restart: '先頭',      fullscreen: '全画面' },
+                    ko: { navigate: '이동',      restart: '처음',      fullscreen: '전체화면' },
+                    zh: { navigate: '翻页',      restart: '重置',      fullscreen: '全屏' },
+                    it: { navigate: 'navigare',  restart: 'inizio',   fullscreen: 'fullscreen' },
+                    nl: { navigate: 'bladeren',  restart: 'begin',    fullscreen: 'vollscherm' },
+                };
+                const t = i18n[_detectLang()] || i18n.en;
+                el = document.createElement('div');
+                el.className = 'keyboard-hint';
+                el.innerHTML = `<kbd>←</kbd> <kbd>→</kbd> ${t.navigate} &middot; <kbd>R</kbd> ${t.restart} &middot; <kbd>F</kbd> ${t.fullscreen}`;
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        _ensureCredit() {
+            let el = document.querySelector('.chassis-credit');
+            if (!el) {
+                el = document.createElement('div');
+                el.className = 'chassis-credit';
+                el.setAttribute('aria-hidden', 'true');
+                el.innerHTML = '💜 by ClickUp Brain';
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+
+        /* ---------- Reveal engine ----------
+           Reveals are driven by the Web Animations API instead of CSS
+           transitions. This lets authors put .reveal* / .step on any
+           element: animation values live in the animation cascade origin
+           and win over normal author declarations, so no wrapper element
+           is required to isolate the chassis from author CSS.
+
+           State per slide:
+           - "hidden":  inline opacity/transform/filter from the 'from'
+                        keyframe of the variant. Set on init and on
+                        forward re-entry.
+           - "played":  animation is running or has run; the class
+                        `reveals-played` on the slide makes playback
+                        idempotent so observer re-fires (resize,
+                        fullscreen) don't restart the animation.
+           - "settled": animation canceled, inline styles cleared. Used
+                        for backward entries (we skip the animation and
+                        show the final state instantly) and for print. */
+
+        _setupReveals() {
+            // Lift the CSS FOUC guard first so getComputedStyle reads each
+            // element's natural opacity, not the guard's blanket opacity: 0.
+            // No paint occurs mid-task — inline hidden styles are applied
+            // before the browser yields, so there is no visible flash.
+            document.documentElement.classList.add('reveals-ready');
+            this.slides.forEach((slide) => {
+                slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                    el._targetOpacity = parseFloat(getComputedStyle(el).opacity);
+                    this._applyHiddenStyle(el);
+                });
+            });
+        }
+
+        _setupPrintSettling() {
+            // Browsers snapshot the document for print/PDF export. WAAPI
+            // animations don't necessarily complete in that snapshot, so
+            // settle every slide to its final state first. After printing,
+            // reset — but only for slides that haven't already been viewed,
+            // so the audience experience picks up where it left off.
+            window.addEventListener('beforeprint', () => {
+                this.slides.forEach((slide) => this._settleSlide(slide));
+            });
+        }
+
+        _readTokens() {
+            const cs = getComputedStyle(document.documentElement);
+            const rawDuration = parseFloat(cs.getPropertyValue('--reveal-duration'));
+            const duration = Number.isFinite(rawDuration) ? rawDuration * 1000 : 800;
+            const ease = cs.getPropertyValue('--reveal-ease').trim() || 'cubic-bezier(0.16, 1, 0.3, 1)';
+            const distance = cs.getPropertyValue('--reveal-distance').trim() || '28px';
+            const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            return {
+                duration: reducedMotion ? 1 : duration,
+                ease,
+                distance,
+            };
+        }
+
+        _getRevealDelay(el) {
+            // Use getAttribute('class') rather than el.className: on SVG
+            // elements, `.className` is an SVGAnimatedString (not a string)
+            // and calling .match on it throws. getAttribute is uniform
+            // across HTML and SVG.
+            const classes = el.getAttribute('class') || '';
+            const m = classes.match(/\bd([1-8])\b/);
+            if (!m) return 0;
+            // Matches CSS .dN: d1 = 100ms, d2 = 250ms, +150ms per step.
+            return 100 + (parseInt(m[1], 10) - 1) * 150;
+        }
+
+        _getRevealKeyframes(el, distance) {
+            const to = el._targetOpacity ?? 1;
+            if (el.classList.contains('reveal-left')) {
+                return [
+                    { opacity: 0, transform: `translateX(calc(-1 * ${distance}))` },
+                    { opacity: to, transform: 'translateX(0)' },
+                ];
+            }
+            if (el.classList.contains('reveal-right')) {
+                return [
+                    { opacity: 0, transform: `translateX(${distance})` },
+                    { opacity: to, transform: 'translateX(0)' },
+                ];
+            }
+            if (el.classList.contains('reveal-scale')) {
+                return [
+                    { opacity: 0, transform: 'scale(0.88)' },
+                    { opacity: to, transform: 'scale(1)' },
+                ];
+            }
+            if (el.classList.contains('reveal-blur')) {
+                return [
+                    { opacity: 0, filter: 'blur(10px)' },
+                    { opacity: to, filter: 'blur(0)' },
+                ];
+            }
+            // Default: .reveal or .step (slide up + fade)
+            return [
+                { opacity: 0, transform: `translateY(${distance})` },
+                { opacity: to, transform: 'translateY(0)' },
+            ];
+        }
+
+        _applyHiddenStyle(el) {
+            const { distance } = this._readTokens();
+            const from = this._getRevealKeyframes(el, distance)[0];
+            if ('opacity' in from) el.style.opacity = from.opacity;
+            if ('transform' in from) el.style.transform = from.transform;
+            if ('filter' in from) el.style.filter = from.filter;
+        }
+
+        _clearHiddenStyle(el) {
+            el.style.opacity = '';
+            el.style.transform = '';
+            el.style.filter = '';
+        }
+
+        _cancelReveal(el) {
+            if (el._revealAnim) {
+                el._revealAnim.cancel();
+                el._revealAnim = null;
+            }
+        }
+
+        _playReveal(el, delayOverride) {
+            this._cancelReveal(el);
+            const { duration, ease, distance } = this._readTokens();
+            const delay = typeof delayOverride === 'number' ? delayOverride : this._getRevealDelay(el);
+            const keyframes = this._getRevealKeyframes(el, distance);
+            // fill: 'backwards' applies the 'from' keyframe during the
+            // stagger delay so the element stays hidden until its turn,
+            // without pinning the 'to' keyframe after the animation ends.
+            // This lets co-existing author CSS (e.g. a `.pulse` CSS
+            // animation on the same element) take over naturally once the
+            // entrance completes — otherwise our fill would mask anything
+            // the author wanted to happen post-reveal.
+            const anim = el.animate(keyframes, {
+                duration,
+                delay,
+                easing: ease,
+                fill: 'backwards',
+            });
+            el._revealAnim = anim;
+            // Safe to clear inline 'from' styles now — the animation's
+            // backwards-fill holds the element at the 'from' keyframe for
+            // the duration of any stagger delay.
+            this._clearHiddenStyle(el);
+        }
+
+        _playSlideReveals(slide) {
+            if (slide.classList.contains('reveals-played')) return;
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(REVEAL_SELECTOR).forEach((el) => this._playReveal(el));
+            // .step elements stay hidden until the user advances.
+        }
+
+        _resetSlideReveals(slide) {
+            // Forward re-entry: cancel in-flight animations, re-hide
+            // everything, and reset step state so the slide replays cleanly
+            // when the observer next adds .visible.
+            slide.classList.remove('reveals-played');
+            slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._applyHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step.step-shown').forEach((el) => el.classList.remove('step-shown'));
+        }
+
+        _settleSlide(slide) {
+            // Print / PDF export: jump to the final state with everything
+            // shown, so every step appears in the exported document.
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(ALL_REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._clearHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step').forEach((el) => el.classList.add('step-shown'));
+        }
+
+        _rewindSlide(slide) {
+            // Backward re-entry: show reveals instantly (no replay — the
+            // viewer already saw the intro) but hide every step, so the
+            // slide is positioned at the start of its stepped content and
+            // can be stepped through again.
+            slide.classList.add('reveals-played');
+            slide.querySelectorAll(REVEAL_SELECTOR).forEach((el) => {
+                this._cancelReveal(el);
+                this._clearHiddenStyle(el);
+            });
+            slide.querySelectorAll('.step').forEach((el) => {
+                el.classList.remove('step-shown');
+                this._cancelReveal(el);
+                this._applyHiddenStyle(el);
+            });
+        }
+
+        /* ---------- Navigation ----------
+           goTo scrolls to the target. Both forward-replay and backward-
+           rewind need to mutate the target BEFORE scrolling — while it's
+           still offscreen — so the viewer never sees the old state flash
+           into view. Resetting after the slide is in view causes a visible
+           "show then hide" blink; the IntersectionObserver fires too late
+           (80% threshold) to catch it. */
+        goTo(index) {
+            const clamped = Math.max(0, Math.min(this.slides.length - 1, index));
+            if (clamped === this.currentSlide) return;
+
+            const target = this.slides[clamped];
+            const goingForward = clamped > this.currentSlide;
+
+            if (target.classList.contains('visible')) {
+                if (goingForward) {
+                    // Forward replay: full reset so the observer can play reveals fresh.
+                    target.classList.remove('visible');
+                    this._resetSlideReveals(target);
+                } else {
+                    // Backward rewind: hide any shown steps so the slide
+                    // scrolls back in at the start of its stepped content.
+                    this._rewindSlide(target);
+                }
+            }
+
+            this._scrollToSlide(clamped, 'smooth');
+        }
+
+        _scrollToSlide(index, behavior) {
+            this.viewports[index]?.scrollIntoView({ behavior, block: 'start' });
+        }
+
+        _slideIndexFromHash(hash) {
+            if (!hash) return -1;
+            return this.slides.findIndex((s) => '#' + s.id === hash);
+        }
+
+        _syncHash() {
+            const slide = this.slides[this.currentSlide];
+            if (!slide || !slide.id) return;
+            const newHash = '#' + slide.id;
+            if (location.hash !== newHash) {
+                // replaceState — keeps the URL in sync without polluting history,
+                // so the browser back button exits the deck instead of stepping through slides.
+                try {
+                    history.replaceState(null, '', newHash);
+                } catch {
+                    // Sandboxed iframes (opaque origin, about:srcdoc) reject URL
+                    // mutation with a SecurityError. Hash sync is a nicety — an
+                    // unguarded throw here kills the observer callback before it
+                    // marks the slide visible and plays its reveals.
+                }
+            }
+        }
+
+        _setupHashNav() {
+            // React to external hash changes (anchor link clicks, back/forward if user uses pushState manually)
+            window.addEventListener('hashchange', () => {
+                const idx = this._slideIndexFromHash(location.hash);
+                if (idx >= 0 && idx !== this.currentSlide) this.goTo(idx);
+            });
+        }
+
+        /* ---------- Custom cursor ----------
+           Accent disc that follows the pointer, hidden after idle. */
+        _setupCursor() {
+            if (!matchMedia('(hover: hover)').matches) return;
+
+            const cursor = document.createElement('div');
+            cursor.className = 'chassis-cursor';
+            cursor.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(cursor);
+            document.body.classList.add('chassis-cursor-active');
+
+            const half = 16;  // matches width/height / 2 in CSS
+            const IDLE_MS = 2500;
+            let idleTimer = null;
+
+            const show = () => {
+                cursor.classList.add('visible');
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                    cursor.classList.remove('visible');
+                }, IDLE_MS);
+            };
+            const hide = () => {
+                clearTimeout(idleTimer);
+                cursor.classList.remove('visible');
+            };
+
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.transform = `translate3d(${e.clientX - half}px, ${e.clientY - half}px, 0)`;
+                show();
+            });
+            document.addEventListener('mouseleave', hide);
+            document.addEventListener('mouseenter', show);
+        }
+
+        /* ---------- Fullscreen ---------- */
+        toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.().catch(() => {});
+            } else {
+                document.exitFullscreen?.();
+            }
+        }
+
+        next() { this.goTo(this.currentSlide + 1); }
+        prev() { this.goTo(this.currentSlide - 1); }
+        first() { this.goTo(0); }
+        last() { this.goTo(this.slides.length - 1); }
+
+        /* ---------- Step-aware advance / retreat ----------
+           advance() reveals the next .step on the current slide (if any),
+           otherwise advances to the next slide. retreat() hides the last
+           revealed step, otherwise goes back to the previous slide. */
+        advance() {
+            const current = this.slides[this.currentSlide];
+            const nextStep = current?.querySelector('.step:not(.step-shown)');
+            if (nextStep) {
+                nextStep.classList.add('step-shown');
+                // No stagger on click-reveal — the user's gesture is the trigger.
+                this._playReveal(nextStep, 0);
+                return;
+            }
+            this.next();
+        }
+        retreat() {
+            const current = this.slides[this.currentSlide];
+            const shown = current?.querySelectorAll('.step.step-shown');
+            if (shown && shown.length > 0) {
+                const last = shown[shown.length - 1];
+                last.classList.remove('step-shown');
+                this._cancelReveal(last);
+                this._applyHiddenStyle(last);
+                return;
+            }
+            this.prev();
+        }
+
+        /* ---------- Intersection observer ----------
+           Fire late (>= 80% in view) so reveals play on a settled slide.
+           This is the single source of truth for active-slide state.
+
+           Forward:  add .visible, play reveals. (goTo() has already reset
+                     the target to pre-reveal state if this is a re-visit,
+                     so the animation is fresh either way.)
+           Backward: add .visible, rewind to the start of the stepped
+                     content — reveals are shown instantly (no replay) and
+                     every step is hidden again so the viewer can step
+                     through it fresh. */
+        _setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const idx = this.viewports.indexOf(entry.target);
+                    if (idx < 0) return;
+                    const slide = this.slides[idx];
+
+                    if (idx === this.currentSlide) {
+                        // Same-slide re-fire (initial load, resize, fullscreen).
+                        if (!slide.classList.contains('visible')) {
+                            slide.classList.add('visible');
+                        }
+                        // Idempotent: only plays if not already marked played.
+                        this._playSlideReveals(slide);
+                        return;
+                    }
+
+                    const goingForward = idx > this.currentSlide;
+                    this.currentSlide = idx;
+                    this._updateNavDots();
+                    this._syncHash();
+
+                    slide.classList.add('visible');
+                    if (goingForward) {
+                        this._playSlideReveals(slide);
+                    } else {
+                        this._rewindSlide(slide);
+                    }
+                });
+            }, { threshold: 0.8 });
+
+            this.viewports.forEach((viewport) => observer.observe(viewport));
+        }
+
+        /* ---------- Keyboard ---------- */
+        _setupKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                // Skip when user is editing text
+                if (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+
+                switch (e.key) {
+                    // Step-aware: consume steps first, then advance slides
+                    case 'ArrowDown':
+                    case 'ArrowRight':
+                    case ' ':
+                        e.preventDefault(); this.advance(); break;
+                    case 'ArrowUp':
+                    case 'ArrowLeft':
+                        e.preventDefault(); this.retreat(); break;
+                    // Slide-level: always skip past steps
+                    case 'PageDown':
+                        e.preventDefault(); this.next(); break;
+                    case 'PageUp':
+                        e.preventDefault(); this.prev(); break;
+                    case 'Home':
+                        e.preventDefault(); this.first(); break;
+                    case 'End':
+                        e.preventDefault(); this.last(); break;
+                    case 'f':
+                    case 'F':
+                        e.preventDefault(); this.toggleFullscreen(); break;
+                    case 'r':
+                    case 'R':
+                        e.preventDefault(); this.first(); break;
+                }
+            });
+        }
+
+        /* ---------- Wheel / trackpad ----------
+           ALWAYS preventDefault — letting any native wheel scroll through
+           races against scrollIntoView + mandatory snap, and blocks macOS
+           two-finger horizontal swipes from triggering browser back/forward.
+           Whichever axis has the larger magnitude wins, so vertical scroll
+           and horizontal trackpad swipes both drive advance/retreat. Lock
+           briefly after a gesture so trackpad inertia (continuous small
+           deltas) can't spam next(). */
+        _setupWheelNav() {
+            let locked = false;
+            window.addEventListener('wheel', (e) => {
+                if (e.ctrlKey) return;                // preserve browser pinch-zoom (ctrl+wheel)
+                e.preventDefault();                   // block native scroll + horizontal back-swipe
+                if (locked) return;
+                const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                if (Math.abs(delta) < 20) return;     // ignore tiny flicks
+                locked = true;
+                if (delta > 0) this.advance(); else this.retreat();
+                setTimeout(() => { locked = false; }, 500);
+            }, { passive: false });
+        }
+
+        /* ---------- Touch / swipe ----------
+           Horizontal swipes advance / retreat slides; left = next, right =
+           prev (matches stories / carousel conventions). Dominantly
+           vertical swipes fall through to native scroll-snap so the
+           existing top/bottom behavior keeps working. A time budget
+           rejects slow pans that were really aborted scrolls. */
+        _setupTouchNav() {
+            const MIN_DISTANCE = 50;     // px — below this is a tap or jitter
+            const MAX_TIME = 600;        // ms — slower than this is a pan, not a swipe
+            const DOMINANCE = 1.2;       // horizontal must beat vertical by this factor
+
+            let startX = 0, startY = 0, startTime = 0;
+            let tracking = false;
+
+            window.addEventListener('touchstart', (e) => {
+                if (document.body.classList.contains('artifact-editor-editing')) { tracking = false; return; }
+                if (e.touches.length !== 1) { tracking = false; return; }
+                const t = e.touches[0];
+                startX = t.clientX;
+                startY = t.clientY;
+                startTime = performance.now();
+                tracking = true;
+            }, { passive: true });
+
+            window.addEventListener('touchend', (e) => {
+                if (!tracking) return;
+                tracking = false;
+                const t = e.changedTouches[0];
+                const dx = t.clientX - startX;
+                const dy = t.clientY - startY;
+                const ax = Math.abs(dx), ay = Math.abs(dy);
+                if (ax < MIN_DISTANCE) return;
+                if (ax < ay * DOMINANCE) return;
+                if (performance.now() - startTime > MAX_TIME) return;
+                if (dx < 0) this.advance(); else this.retreat();
+            }, { passive: true });
+
+            window.addEventListener('touchcancel', () => { tracking = false; }, { passive: true });
+        }
+
+        /* ---------- Canvas scaling ----------
+           Each scaler holds a fixed 1920×1080 slide. Compute the
+           scale factor that fits it inside the viewport and apply via
+           CSS custom property. Runs on init, resize, and fullscreen. */
+        _setupCanvasScale() {
+            const CANVAS_W = 1920;
+            const CANVAS_H = 1080;
+            const scales = this.scales;
+
+            const update = () => {
+                const scale = Math.min(
+                    window.innerWidth / CANVAS_W,
+                    window.innerHeight / CANVAS_H
+                );
+                scales.forEach((el) => {
+                    el?.style.setProperty('--slide-scale', scale);
+                });
+            };
+
+            update();
+            window.addEventListener('resize', update);
+            document.addEventListener('fullscreenchange', () => {
+                requestAnimationFrame(update);
+            });
+        }
+
+        /* ---------- Viewport sync ----------
+           Resize / fullscreenchange → realign current slide. Each slide is
+           100vh, so a viewport height change leaves the existing scroll
+           position out of alignment with the slide top; scroll-snap doesn't
+           re-snap on its own. */
+        _setupViewportSync() {
+            const realign = () => {
+                requestAnimationFrame(() => {
+                    this._scrollToSlide(this.currentSlide, 'auto');
+                });
+            };
+            window.addEventListener('resize', realign);
+            document.addEventListener('fullscreenchange', realign);
+        }
+
+        /* ---------- Nav dots ---------- */
+        _buildNavDots() {
+            // Clear first — prevents duplicates when DOM is re-serialized/re-opened
+            this.navDotsContainer.innerHTML = '';
+            this.slides.forEach((slide, idx) => {
+                const dot = document.createElement('button');
+                dot.setAttribute('aria-label', `Go to slide ${idx + 1}`);
+                if (idx === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => this.goTo(idx));
+                this.navDotsContainer.appendChild(dot);
+            });
+        }
+
+        _updateNavDots() {
+            const dots = this.navDotsContainer.querySelectorAll('button');
+            dots.forEach((dot, idx) => {
+                dot.classList.toggle('active', idx === this.currentSlide);
+            });
+        }
+    }
+
+    /* ---------- Auto-init ---------- */
+    function init() {
+        // Each slide canvas is its own editable host for the inline editor.
+        document.querySelectorAll('.slide').forEach(function (el) {
+            el.classList.add('artifact-editable');
+        });
+        window.slides = new SlidePresentation();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+
+</script>
+<!-- /skill:chassis -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PROFEL 2 - Week 3 Session 1: IS in Philippine Organizations</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" />
+  <style>
+    :root{--background:#f9f7f4;--foreground:#2d3748;--accent:#2a8f9e;--coral:#e07a5f;--card:#ffffff;--border:rgba(45,55,72,0.08);--font-display:'Outfit',sans-serif;--font-body:'Work Sans',sans-serif}body{background:var(--background)}h1,h2,h3{font-family:var(--font-display);color:var(--foreground);letter-spacing:-0.02em}p,li,span,td,th{font-family:var(--font-body);color:var(--foreground)}.slide{background:var(--background);padding:80px;display:flex;flex-direction:column;justify-content:center}.title-slide{background:linear-gradient(135deg,#f0fafb 0%,#f9f7f4 40%,#fef5f0 100%);align-items:center;text-align:center;position:relative;overflow:hidden}.title-slide h1{font-size:74px;font-weight:800;line-height:1.05;margin-bottom:24px}.title-slide .subtitle{font-size:30px;color:var(--accent);font-weight:500;margin-bottom:16px}.title-slide .meta{font-size:22px;color:rgba(45,55,72,0.6)}.section-header{background:linear-gradient(135deg,var(--accent) 0%,#1a6b77 100%);align-items:center;text-align:center}.section-header h1{color:#fff;font-size:62px;font-weight:700}.section-header p{color:rgba(255,255,255,0.85);font-size:27px;max-width:800px}.section-header .section-num{color:rgba(255,255,255,0.4);font-size:120px;font-weight:800;position:absolute;top:60px;left:80px}.content-slide h2{font-size:46px;font-weight:700;margin-bottom:28px;line-height:1.15}.content-slide p{font-size:26px;line-height:1.5;max-width:1400px;color:rgba(45,55,72,0.8)}.content-slide ul{list-style:none;padding:0}.content-slide ul li{font-size:24px;line-height:1.5;padding:8px 0 8px 38px;position:relative;color:rgba(45,55,72,0.85)}.content-slide ul li::before{content:'';position:absolute;left:0;top:16px;width:10px;height:10px;background:var(--accent);border-radius:50%}.eyebrow{font-family:var(--font-body);font-size:19px;font-weight:500;color:var(--coral);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px}.card-grid{display:grid;gap:18px;margin-top:22px}.card-grid.cols-2{grid-template-columns:1fr 1fr}.card-grid.cols-3{grid-template-columns:1fr 1fr 1fr}.card{background:var(--card);border-radius:14px;padding:26px;box-shadow:0 2px 10px rgba(0,0,0,0.04);border:1px solid var(--border)}.card h4{font-family:var(--font-display);font-size:22px;font-weight:600;margin-bottom:8px;color:var(--accent)}.card p{font-size:19px;line-height:1.4;color:rgba(45,55,72,0.75)}.data-table{width:100%;border-collapse:collapse;margin-top:16px;border-radius:12px;overflow:hidden}.data-table th{background:var(--accent);color:#fff;font-family:var(--font-display);font-size:19px;font-weight:600;padding:12px 16px;text-align:left}.data-table td{padding:11px 16px;font-size:19px;border-bottom:1px solid var(--border);background:var(--card)}.data-table tr:nth-child(even) td{background:#f8fafb}.highlight-box{background:linear-gradient(135deg,#f0fafb,#e8f8fa);border-left:5px solid var(--accent);border-radius:0 12px 12px 0;padding:22px 28px;margin-top:16px}.highlight-box p{font-size:22px;color:var(--foreground)}.split{flex-direction:row;gap:48px;align-items:center}.split .text-side{flex:1}.split .img-side{flex:1;border-radius:14px;overflow:hidden;height:480px}.split .img-side img{width:100%;height:100%;object-fit:cover}.stat-block{display:flex;gap:36px;margin-top:28px;flex-wrap:wrap;justify-content:center}.stat-item{text-align:center}.stat-item .number{font-family:var(--font-display);font-size:56px;font-weight:800;color:var(--accent)}.stat-item .label{font-size:17px;color:rgba(45,55,72,0.6);margin-top:6px}.quiz-slide{background:linear-gradient(135deg,#fef9f6 0%,#f9f7f4 100%)}.quiz-slide h2{color:var(--coral)}.quiz-option{background:var(--card);border-radius:10px;padding:14px 22px;margin:8px 0;font-size:22px;border:2px solid var(--border)}.quiz-option span{font-weight:600;color:var(--accent);margin-right:14px}.accent{color:var(--accent)}.coral{color:var(--coral)}.speaker-notes{display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(45,55,72,0.95);color:#fff;padding:20px 36px;font-size:16px;line-height:1.5;font-family:var(--font-body);max-height:260px;overflow-y:auto}.notes-visible .speaker-notes{display:block}
+  </style>
+</head>
+<body>
+
+<section class="slide title-slide">
+  <span class="eyebrow reveal d1">PROFEL 2 | Week 3, Session 1</span>
+  <h1 class="reveal d2">IS in Philippine<br>Organizations</h1>
+  <p class="subtitle reveal d3">Local Case Studies & Technology in Filipino Business</p>
+  <p class="meta reveal d4">Cronasia Foundation College | Joshua E. Nisnisan</p>
+  <div class="speaker-notes">SCRIPT: "Good day class! Karon, mas close to home ta. We'll study how PHILIPPINE organizations — from giant conglomerates to SMEs diri sa GenSan — use Information Systems. Relatable kaayo ni kay makita ninyo ang technology sa everyday life nato. I'll show you real companies, real systems, ug real results. Let's explore ang IS landscape sa Pilipinas!"</div>
+</section>
+
+<section class="slide section-header">
+  <span class="section-num reveal d1">01</span>
+  <h1 class="reveal d2">Philippine IS<br>Landscape</h1>
+  <p class="reveal d3">The current state of technology adoption in PH business</p>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Overview</span>
+  <h2 class="reveal d2">Philippine Digital Economy Snapshot</h2>
+  <div class="stat-block reveal d3">
+    <div class="stat-item"><div class="number">78.5M</div><div class="label">Internet users<br>(2024)</div></div>
+    <div class="stat-item"><div class="number">86M+</div><div class="label">E-wallet<br>accounts</div></div>
+    <div class="stat-item"><div class="number">$17.5B</div><div class="label">Digital economy<br>value (2025 est.)</div></div>
+    <div class="stat-item"><div class="number">99.6%</div><div class="label">Businesses are<br>MSMEs</div></div>
+  </div>
+  <div class="highlight-box reveal d4">
+    <p><strong class="accent">Key Insight:</strong> The Philippines has massive digital USERS but relatively low digital BUSINESS adoption among MSMEs (only ~30% digitalized).</p>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Tan-awa ang snapshot sa Philippine digital economy. 78.5 million internet users — more than half the population. 86 million+ e-wallet accounts — mas daghan pa sa internet users! $17.5 billion estimated digital economy value by 2025. But here's the important one: 99.6% of our businesses are MSMEs — Micro, Small, and Medium Enterprises. Sari-sari stores, small shops, local businesses. And only about 30% of these are digitalized. So daghan pa og opportunity for IS adoption. This gap? This is where YOUR expertise will be valuable in the future — helping businesses adopt technology."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Key Players</span>
+  <h2 class="reveal d2">Philippine Tech Ecosystem</h2>
+  <div class="card-grid cols-3 reveal d3">
+    <div class="card"><h4>Fintech</h4><p>GCash, Maya, Tonik, GoTyme, Coins.ph, PayMongo</p></div>
+    <div class="card"><h4>E-Commerce</h4><p>Shopee PH, Lazada PH, Zalora, BeautyMNL</p></div>
+    <div class="card"><h4>Ride/Delivery</h4><p>Grab PH, Angkas, Lalamove, Transportify</p></div>
+    <div class="card"><h4>BPO/IT Services</h4><p>Accenture PH, TaskUs, Concentrix, Alorica</p></div>
+    <div class="card"><h4>Digital Banks</h4><p>Tonik, Maya Bank, GoTyme, UNOBank, CIMB</p></div>
+    <div class="card"><h4>SaaS/Startups</h4><p>Kumu, Zennya, Great Deals, Edukasyon.ph</p></div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "The Philippine tech ecosystem is growing fast. In Fintech alone — GCash, Maya, Tonik, GoTyme, PayMongo. E-commerce — Shopee ug Lazada dominate but local players like BeautyMNL exist. Ride/delivery — Grab is king but Angkas, Lalamove, Transportify are players. BPO — our biggest IT service sector, world-class. Digital banks — 6 licensed digital banks, purely online, no branches needed. Startups — emerging local innovators. Class, this ecosystem creates JOBS for IS-literate professionals. Accountants who understand these tech companies? Highly sought after."</div>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Case Study</span>
+    <h2 class="reveal d2">Case: GCash — From Remittance to Super App</h2>
+    <ul class="reveal d3">
+      <li><strong>2004:</strong> Started as mobile remittance service by Globe</li>
+      <li><strong>2017:</strong> Relaunched as full e-wallet under Mynt</li>
+      <li><strong>2020:</strong> COVID pandemic drove massive adoption</li>
+      <li><strong>2024:</strong> 86M+ users, 3M+ merchants, expanded to loans, investments, insurance</li>
+      <li><strong>IS Infrastructure:</strong> Cloud-based, API-driven, AI fraud detection</li>
+    </ul>
+  </div>
+  <div class="img-side reveal d4">
+    <img src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&h=600&fit=crop" alt="Mobile payment" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "Let's deep dive into GCash. Started in 2004 — originally just mobile remittance for OFWs. 2017, relaunched as full e-wallet. 2020, ang pandemic was their rocket fuel — people NEEDED cashless payments. Growth exploded. By 2024: 86 million users, 3 million merchants. But it's not just payments anymore — GCash has GInvest (investments), GInsure (insurance), GCredit (loans), GSave (savings). It's a SUPER APP. Behind all this? Sophisticated IS — cloud infrastructure, APIs connecting to banks ug merchants, AI for fraud detection (blocks millions of fraudulent transactions daily). As accountants, imagine handling the financial statements of GCash — millions of micro-transactions daily, complex revenue streams. Fascinating."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Case: SM Group</span>
+  <h2 class="reveal d2">SM Supermalls: Physical + Digital Integration</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card" style="border-left:4px solid var(--accent);">
+      <h4>Digital Initiatives</h4>
+      <p>• SM Store Online — e-commerce for department store<br>• SM Malls Online — virtual mall experience<br>• SM Markets (online grocery delivery)<br>• SM Supermalls App (loyalty, parking, wayfinding)<br>• Data analytics for tenant management<br>• Digital signage & smart building systems</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--coral);">
+      <h4>IS Challenges for Retail Giants</h4>
+      <p>• Integrating online + offline inventory<br>• Real-time stock visibility across 80+ malls<br>• Customer data unification (in-store + online)<br>• Cybersecurity for payment systems<br>• Training 100,000+ staff on digital tools<br>• Legacy system modernization</p>
+    </div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "SM Group — biggest retail conglomerate sa Philippines. They're doing 'phygital' — physical plus digital integration. SM Store Online, SM Markets for groceries, SM Supermalls App for loyalty and parking. But their CHALLENGES are instructive: how do you integrate inventory across 80+ malls PLUS online? How do you unify customer data from in-store purchases AND online orders? How do you train 100,000+ employees on new digital systems? And legacy systems — SM has been around since 1958, ang original systems nila, outdated na. Upgrading without disrupting operations — very challenging. These are real IS problems that need real IS professionals to solve."</div>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Case: BPO Industry</span>
+    <h2 class="reveal d2">Philippine BPO: IS Innovation Hub</h2>
+    <ul class="reveal d3">
+      <li><strong>1.7M employed</strong> in Philippine BPO sector (2024)</li>
+      <li><strong>$32.5B revenue</strong> — 2nd largest BPO market globally</li>
+      <li><strong>AI Integration:</strong> Chatbots handle 40% of routine queries</li>
+      <li><strong>Cloud-First:</strong> Remote work infrastructure post-COVID</li>
+      <li><strong>Data Analytics:</strong> Performance monitoring, quality metrics</li>
+      <li><strong>RPA:</strong> Automating back-office processes for clients</li>
+    </ul>
+  </div>
+  <div class="img-side reveal d4">
+    <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&h=600&fit=crop" alt="Modern office call center" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "The BPO industry — pride of the Philippines. 1.7 million employees, $32.5 billion in revenue, second largest globally after India. But the industry is transforming through IS. AI chatbots now handle 40% of routine customer queries — agents handle complex cases only. Cloud infrastructure enabled work-from-home during pandemic — some companies never went back to office. RPA (Robotic Process Automation) automates repetitive tasks. Data analytics monitors performance in real-time. The BPO of tomorrow won't just answer phones — it'll be a TECHNOLOGY SERVICES provider. Class, many of you might work in BPO initially. Understanding IS makes you valuable even there."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Government IS</span>
+  <h2 class="reveal d2">E-Government in the Philippines</h2>
+  <table class="data-table reveal d3">
+    <tr><th>System</th><th>Function</th><th>Status</th></tr>
+    <tr><td><strong>PhilSys (National ID)</strong></td><td>Universal identification system</td><td>92M+ registered (2024)</td></tr>
+    <tr><td><strong>eFPS / eBIRForms</strong></td><td>Online tax filing & payment</td><td>Operational, expanding</td></tr>
+    <tr><td><strong>eGov PH Super App</strong></td><td>Central portal for government services</td><td>Launched 2023</td></tr>
+    <tr><td><strong>PhilGEPS</strong></td><td>Electronic government procurement</td><td>Operational</td></tr>
+    <tr><td><strong>DICT Cloud First Policy</strong></td><td>Government cloud adoption mandate</td><td>In implementation</td></tr>
+    <tr><td><strong>TRAIN eSales (BIR)</strong></td><td>Electronic invoicing/receipts</td><td>Phased rollout</td></tr>
+  </table>
+  <div class="speaker-notes">SCRIPT: "The government is also adopting IS. PhilSys — our national ID — 92 million registered already. eFPS ug eBIRForms — we file taxes online now. eGov PH Super App launched in 2023 — one app for government services. PhilGEPS for procurement. DICT mandated Cloud First policy for government agencies. And soon, electronic invoicing under TRAIN law — the BIR will require electronic sales reports. As accountants, you'll DIRECTLY interact with these systems. eFPS, eBIR, electronic invoicing — these are your tools. Understanding them deeply gives you advantage over accountants who don't."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">BIR eFPS Walkthrough</span>
+  <h2 class="reveal d2">BIR Electronic Filing & Payment (eFPS)</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card">
+      <h4>What is eFPS?</h4>
+      <p>The BIR's Electronic Filing and Payment System allows taxpayers to file tax returns and pay taxes online. Mandatory for large taxpayers and top corporations.</p>
+    </div>
+    <div class="card">
+      <h4>Key Forms Filed Electronically</h4>
+      <p>• 1601-C (Withholding Tax)<br>• 1701Q (Quarterly ITR - Individual)<br>• 1702Q (Quarterly ITR - Corporate)<br>• 2550M (Monthly VAT)<br>• 2550Q (Quarterly VAT)<br>• 1604-CF (Annual Alphalist)</p>
+    </div>
+  </div>
+  <div class="highlight-box reveal d4">
+    <p><strong class="accent">Career Note:</strong> Every accounting firm in the Philippines uses eFPS/eBIR. Familiarity with these systems is a <strong>minimum job requirement</strong>.</p>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Let me walk you through eFPS — Bureau of Internal Revenue's electronic filing system. Every large taxpayer, every top corporation MUST file electronically. Key forms: 1601-C for withholding tax, 1701Q/1702Q for income tax, 2550M/2550Q for VAT. As future accountants, you WILL use this system. When you intern or get your first job, eFPS proficiency is EXPECTED. It's not something they'll teach you on the job — they assume you know it. So this is directly career-relevant. We'll do a detailed navigation walkthrough in a future session so you'll be comfortable with the interface."</div>
+</section>
+
+<section class="slide section-header">
+  <span class="section-num reveal d1">02</span>
+  <h1 class="reveal d2">SMEs & IS<br>Adoption</h1>
+  <p class="reveal d3">How small Filipino businesses can leverage technology</p>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">The SME Challenge</span>
+  <h2 class="reveal d2">Why Philippine SMEs Lag in IS Adoption</h2>
+  <ul>
+    <li class="step"><strong class="coral">Budget constraints:</strong> Limited capital for technology investments</li>
+    <li class="step"><strong class="coral">Digital skills gap:</strong> Owners/staff lack tech knowledge</li>
+    <li class="step"><strong class="coral">Fear of change:</strong> "Ang daan na way, gumagana man" mentality</li>
+    <li class="step"><strong class="coral">Connectivity:</strong> Unreliable internet in some areas</li>
+    <li class="step"><strong class="coral">Lack of awareness:</strong> Don't know what tools exist or how they help</li>
+    <li class="step"><strong class="coral">No perceived ROI:</strong> "Computer gamit ra for Facebook"</li>
+  </ul>
+  <div class="speaker-notes">SCRIPT: "Why are Philippine SMEs slow to adopt IS? Six reasons. BUDGET — 'Wala mi kwarta para sa technology.' SKILLS — owners don't know how to use digital tools. FEAR — 'Ang system namo daan, okay ra man.' CONNECTIVITY — some areas, unreliable internet pa. AWARENESS — they literally don't know tools like free accounting software exist. NO PERCEIVED ROI — 'Para unsa man ang computer? Para mag-Facebook?' Class, these are REAL barriers. But kini pud ang OPPORTUNITY for you as professionals — you can help bridge this gap. Imagine being a consultant helping local GenSan businesses go digital. Massive impact."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Practical Solutions</span>
+  <h2 class="reveal d2">Affordable IS Solutions for SMEs</h2>
+  <table class="data-table reveal d3">
+    <tr><th>Business Need</th><th>Free/Affordable Tool</th><th>Impact</th></tr>
+    <tr><td>Accounting</td><td>Wave (free), GCash Business, BIR eFPS</td><td>Accurate records, tax compliance</td></tr>
+    <tr><td>Inventory</td><td>Google Sheets, inFlow (free tier)</td><td>Stock visibility, less wastage</td></tr>
+    <tr><td>Sales/POS</td><td>GCash Business, Maya Business, Vend</td><td>Digital payments, sales tracking</td></tr>
+    <tr><td>Communication</td><td>Messenger, Viber Business, Google Chat</td><td>Team coordination</td></tr>
+    <tr><td>Marketing</td><td>Facebook Page, Canva, Google Business</td><td>Online visibility, customer reach</td></tr>
+    <tr><td>Scheduling</td><td>Google Calendar, Calendly (free)</td><td>Organized appointments</td></tr>
+  </table>
+  <div class="speaker-notes">SCRIPT: "The good news: there are FREE or very affordable tools for SMEs. Accounting? Wave is free. GCash Business for payments. Inventory? Google Sheets or inFlow free tier. Sales? GCash ug Maya business accounts — POS capability sa phone mo! Communication? Messenger groups, Viber Business. Marketing? Facebook Page is free, Canva for designs. Scheduling? Google Calendar. Class, you don't need millions to go digital. A sari-sari store can start with GCash acceptance ug Google Sheets for inventory. Baby steps. As future consultants, you can recommend appropriate tools based on budget. Not every business needs SAP."</div>
+</section>
+
+<section class="slide content-slide split">
+  <div class="text-side">
+    <span class="eyebrow reveal d1">Local Case</span>
+    <h2 class="reveal d2">Case: GenSan Tuna Industry & IS</h2>
+    <ul class="reveal d3">
+      <li><strong>Context:</strong> General Santos — Tuna Capital of the Philippines</li>
+      <li><strong>Challenge:</strong> Supply chain tracking, quality compliance, export documentation</li>
+      <li><strong>IS Solutions Used:</strong></li>
+      <li>Traceability systems for fish from boat to market</li>
+      <li>Electronic catch documentation (EU compliance)</li>
+      <li>Temperature monitoring IoT sensors in cold storage</li>
+      <li>Export documentation automation</li>
+    </ul>
+  </div>
+  <div class="img-side reveal d4">
+    <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&h=600&fit=crop" alt="Fishing industry seafood" />
+  </div>
+  <div class="speaker-notes">SCRIPT: "Let's go hyper-local — General Santos City! Our city is the Tuna Capital of the Philippines. Ang tuna industry nato uses IS extensively. Why? Because international buyers (EU, Japan) require TRACEABILITY — they want to know where exactly the fish came from, was it legally caught, was the cold chain maintained. So our tuna companies use traceability IS — electronic catch documentation, GPS tracking on boats, IoT temperature sensors in cold storage, automated export paperwork. Without these IS, dili makaexport sa EU! So even here in GenSan, IS is critical for business. Not just for tech companies — for FISHERIES! As accountants in GenSan, you might audit these systems someday."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Activity</span>
+  <h2 class="reveal d2">Group Activity: Local Business IS Assessment</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card">
+      <h4>Instructions</h4>
+      <p>In groups of 4-5:<br>1. Choose a local GenSan business you're familiar with<br>2. Assess their current IS usage (what systems do they use?)<br>3. Identify gaps/opportunities<br>4. Recommend 3 affordable IS improvements<br>5. Present in 3 minutes</p>
+    </div>
+    <div class="card" style="background:linear-gradient(135deg,#f0fafb,#e8f8fa);">
+      <h4>Business Ideas to Assess</h4>
+      <p>• Local restaurant/cafe<br>• Sari-sari store<br>• Clothing shop/boutique<br>• Repair shop<br>• Tutoring center<br>• Barbershop/salon<br>• Local farm/fishery</p>
+    </div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Activity time! Groups of 4-5. Pick a local business here in GenSan that you're familiar with. Assess: what IS do they currently use? Gaps? Then recommend 3 affordable improvements. You have 15 minutes to discuss, then 3 minutes per group to present. Be PRACTICAL — recommend things they can actually afford and implement. Go!"</div>
+</section>
+
+<section class="slide section-header">
+  <span class="section-num reveal d1">03</span>
+  <h1 class="reveal d2">DICT & Government<br>IS Initiatives</h1>
+  <p class="reveal d3">National policies driving technology adoption</p>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Policy Framework</span>
+  <h2 class="reveal d2">Key Philippine IS/IT Policies</h2>
+  <table class="data-table reveal d3">
+    <tr><th>Policy/Law</th><th>Year</th><th>Purpose</th></tr>
+    <tr><td><strong>R.A. 10173 (Data Privacy Act)</strong></td><td>2012</td><td>Protect personal data, establish NPC</td></tr>
+    <tr><td><strong>R.A. 10175 (Cybercrime Prevention)</strong></td><td>2012</td><td>Define & penalize cybercrimes</td></tr>
+    <tr><td><strong>R.A. 11032 (Ease of Doing Business)</strong></td><td>2018</td><td>Streamline government services, digitize</td></tr>
+    <tr><td><strong>R.A. 11934 (SIM Registration)</strong></td><td>2022</td><td>Register all SIM cards to reduce fraud</td></tr>
+    <tr><td><strong>DICT Cloud First Policy</strong></td><td>2020</td><td>Mandate cloud adoption for gov agencies</td></tr>
+    <tr><td><strong>Philippine Digital Workforce Strategy</strong></td><td>2023</td><td>Upskill workforce for digital economy</td></tr>
+  </table>
+  <div class="speaker-notes">SCRIPT: "These are the key IT laws and policies in the Philippines. Data Privacy Act (RA 10173) — protects personal information, created the National Privacy Commission. Cybercrime Prevention Act — defines cybercrimes and penalties. Ease of Doing Business Act — mandates government to digitize services. SIM Registration Act — remember when we all had to register? To reduce text scams and fraud. DICT Cloud First Policy — government agencies must consider cloud first. Philippine Digital Workforce Strategy — national plan to upskill Filipinos for the digital economy. These policies DIRECTLY affect your work as accountants — especially Data Privacy Act when handling client financial data."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Data Privacy Act</span>
+  <h2 class="reveal d2">R.A. 10173: Data Privacy Act — Key Points for Accountants</h2>
+  <div class="card-grid cols-2 reveal d3">
+    <div class="card">
+      <h4>What It Requires</h4>
+      <p>• Consent before collecting personal data<br>• Purpose limitation (use only for stated purpose)<br>• Proportionality (collect only what's needed)<br>• Data breach notification within 72 hours<br>• Appoint Data Protection Officer (DPO)<br>• Privacy Impact Assessment for new systems</p>
+    </div>
+    <div class="card">
+      <h4>For Accountants Specifically</h4>
+      <p>• Client financial data = sensitive personal info<br>• Must secure physical AND digital records<br>• Cannot share client data without consent<br>• Must have data retention policies<br>• Penalties: up to ₱5M fine + imprisonment<br>• Professional liability for data breaches</p>
+    </div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Data Privacy Act — CRITICAL for accountants. When you handle someone's ITR, bank statements, financial records — that's PERSONAL INFORMATION protected by law. Requirements: get consent, use data ONLY for its stated purpose, collect only what's needed, report breaches within 72 hours, appoint a DPO. For accountants specifically: client financial data is sensitive. You must secure both physical (lock cabinets) AND digital (encrypt files) records. Cannot share without consent. Must have retention policies — how long do you keep records? Penalties are SERIOUS — up to 5 million pesos fine PLUS imprisonment. So this is not theoretical — this protects you and your clients. Module 4 will cover this in depth."</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Summary</span>
+  <h2 class="reveal d2">Session Takeaways</h2>
+  <ul>
+    <li class="step"><strong class="accent">1.</strong> PH has 78.5M internet users but only ~30% of SMEs are digitalized — huge opportunity gap</li>
+    <li class="step"><strong class="accent">2.</strong> Major PH companies (GCash, SM, BPO) are advancing rapidly in IS adoption</li>
+    <li class="step"><strong class="accent">3.</strong> Government IS (eFPS, PhilSys, eGov PH) directly impacts accounting work</li>
+    <li class="step"><strong class="accent">4.</strong> SMEs can start digital transformation with FREE tools (Wave, Google, GCash Business)</li>
+    <li class="step"><strong class="accent">5.</strong> Key laws: Data Privacy Act, Cybercrime Act — accountants must comply</li>
+  </ul>
+  <div class="speaker-notes">SCRIPT: "Five takeaways. One, Philippines has huge digital users but low SME adoption — opportunity for IS professionals. Two, big companies leading — GCash, SM, BPO industry. Three, government IS directly impacts you — eFPS, electronic invoicing. Four, SMEs can start with free tools — you can advise them. Five, know the laws — Data Privacy Act is not optional, violations have serious penalties. Great session! Let's do our quiz."</div>
+</section>
+
+<section class="slide quiz-slide">
+  <span class="eyebrow reveal d1">Quiz</span>
+  <h2 class="reveal d2">Week 3, Session 1: Quiz</h2>
+  <div class="reveal d3">
+    <div class="quiz-option"><span>1.</span> What percentage of Philippine businesses are MSMEs? What's the approximate digitalization rate among them?</div>
+    <div class="quiz-option"><span>2.</span> Describe how GCash evolved from a simple service to a super app. What IS technologies enable this?</div>
+    <div class="quiz-option"><span>3.</span> What is eFPS? Why is it important for accountants?</div>
+    <div class="quiz-option"><span>4.</span> Name 3 barriers to IS adoption among Philippine SMEs and suggest solutions for each.</div>
+    <div class="quiz-option"><span>5.</span> What is the Data Privacy Act (R.A. 10173)? Give 2 requirements that affect accountants.</div>
+  </div>
+  <div class="speaker-notes">SCRIPT: "Quiz time! 5 items, 10 minutes, quarter sheet. Go!"</div>
+</section>
+
+<section class="slide content-slide">
+  <span class="eyebrow reveal d1">Answer Key</span>
+  <h2 class="reveal d2">Quiz Answers</h2>
+  <ul style="font-size:20px;">
+    <li class="step"><strong>1.</strong> 99.6% are MSMEs; ~30% digitalized.<br><em style="color:var(--accent);font-size:17px;">Rationale: Shows the massive digital divide and opportunity in PH business landscape</em></li>
+    <li class="step"><strong>2.</strong> Started as remittance (2004) → e-wallet (2017) → super app (loans, invest, insurance, 2024). Enabled by cloud, APIs, AI fraud detection.<br><em style="color:var(--accent);font-size:17px;">Rationale: Illustrates platform evolution and IS infrastructure requirements</em></li>
+    <li class="step"><strong>3.</strong> eFPS = BIR Electronic Filing & Payment System for online tax filing. Important: mandatory for large taxpayers, accountants use it daily.<br><em style="color:var(--accent);font-size:17px;">Rationale: Direct career relevance — this is a day-to-day tool for Filipino accountants</em></li>
+    <li class="step"><strong>4.</strong> Budget (→ free tools), Skills gap (→ training), Fear of change (→ demonstrate ROI/start small). Others: connectivity, awareness, perceived ROI.<br><em style="color:var(--accent);font-size:17px;">Rationale: Problem-solution pairing shows practical consulting mindset</em></li>
+    <li class="step"><strong>5.</strong> DPA protects personal data. For accountants: (1) must secure client financial data, (2) breach notification within 72 hours, (3) consent before collecting.<br><em style="color:var(--accent);font-size:17px;">Rationale: Legal compliance is non-negotiable for accounting professionals</em></li>
+  </ul>
+  <div class="speaker-notes">SCRIPT: "Check your answers. How'd everyone do? These topics are practical — you'll encounter all of them in your career. Good job class!"</div>
+</section>
+
+<section class="slide title-slide">
+  <span class="eyebrow reveal d1">Next Session</span>
+  <h1 class="reveal d2" style="font-size:58px;">Next: Technology Evaluation<br>Frameworks<br><span style="font-size:36px;color:var(--accent);">How to systematically assess IS solutions</span></h1>
+  <p class="meta reveal d3">Homework: Identify 1 local business near you. What IS do they use? What could they improve?</p>
+  <div class="speaker-notes">SCRIPT: "Next session, we'll learn Technology Evaluation Frameworks — how to systematically assess and compare different IS solutions. Very useful for your career. Homework: identify one local business near you — observe what IS they use (or don't use) and think about improvements. See you next time! God bless!"</div>
+</section>
+
+<script>document.addEventListener('keydown',(e)=>{if(e.key==='n'||e.key==='N')document.body.classList.toggle('notes-visible');});</script>
+</body>
+</html>
