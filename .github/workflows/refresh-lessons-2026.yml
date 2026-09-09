@@ -1,0 +1,168 @@
+name: Refresh PROFEL 2 lessons for 2026
+
+on:
+  push:
+    paths:
+      - '.github/workflows/refresh-lessons-2026.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Refresh dated lesson content
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('lessons')
+          changed = []
+
+          def apply(name, replacements):
+              p = root / name
+              s = p.read_text(encoding='utf-8')
+              original = s
+              for old, new in replacements:
+                  if old in s:
+                      s = s.replace(old, new)
+              if s != original:
+                  p.write_text(s, encoding='utf-8')
+                  changed.append(name)
+
+          apply('Week02_Session02_IS_Trends_2024_2025.html', [
+              ('PROFEL 2 - Week 2 Session 2: IS Trends 2024-2025','PROFEL 2 - Week 2 Session 2: IS Trends 2026'),
+              ('IS Trends 2024-2025<br>Industry Deep Dive','IS Trends 2026<br>Current Industry Deep Dive'),
+              ('Generative AI, Cloud-First, Cybersecurity & Their Industry Impact','Agentic AI, Cloud/AI Infrastructure, Cyber Resilience & Industry Impact'),
+              ('major IS trends of 2024-2025. We\'ll cover Generative AI in detail, the Cloud-First movement, cybersecurity threats, ug importantly — how each trend affects SPECIFIC industries including accounting.','major IS trends shaping organizations in 2026. We\'ll connect generative and agentic AI, cloud and AI infrastructure, cybersecurity, digital trust, ug importantly — how each trend affects SPECIFIC industries including accounting.'),
+              ('The technology that changed everything in 2023-2025','From generative AI to agentic and multiagent systems'),
+              ('<tr><td><strong>2025</strong></td><td>Agentic AI, multimodal AI</td><td>AI that acts independently, understands images/video/audio</td></tr>','<tr><td><strong>2025</strong></td><td>Agentic and multimodal AI expands</td><td>Models begin planning, tool use, and richer multimodal work</td></tr>\n    <tr><td><strong>2026</strong></td><td>Multiagent and domain-specific AI</td><td>Specialized agents coordinate work with stronger security, governance, and human oversight</td></tr>'),
+              ('Karon 2025, we\'re entering AGENTIC AI — AI that can plan and act independently.','By 2026, the conversation has moved beyond chatbots into AGENTIC and MULTIAGENT systems — AI that can plan, call tools, coordinate specialized agents, and complete multi-step work under defined controls.'),
+              ('Emerging Uses (2025-2027)','Expanding Uses (2026-2028)'),
+              ('Cybersecurity<br>Landscape 2025','Cybersecurity<br>Landscape 2026'),
+              ('Top Cybersecurity Threats 2024-2025','Top Cybersecurity Threats in 2026'),
+              ('<div class="card"><h4>Ransomware</h4><p>Encrypts your data, demands payment. Average cost: $4.5M per incident</p></div>','<div class="card"><h4>Ransomware & Extortion</h4><p>Disrupts operations, steals data, and pressures victims through encryption or leak threats.</p></div>'),
+              ('<div class="card"><h4>Phishing (AI-enhanced)</h4><p>Fake emails/messages now written by AI — harder to detect</p></div>','<div class="card"><h4>AI-Enhanced Impersonation</h4><p>Phishing, voice cloning, and deepfakes make fraudulent requests more convincing.</p></div>'),
+              ('<div class="card"><h4>AI-Powered Attacks</h4><p>Attackers use AI to find vulnerabilities faster, create deepfakes</p></div>','<div class="card"><h4>AI & Agent Attack Surfaces</h4><p>Attackers target models, agent permissions, connected tools, prompts, and automated workflows.</p></div>'),
+              ('Cybersecurity threats in 2025 — more sophisticated than ever.','Cybersecurity threats in 2026 are faster, more automated, and more identity-focused than before.'),
+              ('Average cost $4.5 million per incident!','IBM\'s 2026 breach study puts the global average cost of a data breach at about $4.99 million, while AI-enabled attacks are rising.'),
+              ('<li><strong>2023-2024:</strong> Philippines ranked #4 most attacked country in Asia</li>','<li><strong>2026 focus:</strong> Identity protection, AI-assisted fraud defense, vendor risk, cloud security, and fast incident response</li>'),
+              ('<li><strong>Challenge:</strong> Low cybersecurity budget in most PH organizations</li>','<li><strong>Current challenge:</strong> Security controls must keep pace with cloud, SaaS, AI tools, and third-party integrations</li>'),
+              ('Sa Philippines specifically — we\'re highly targeted. Ranked #4 most attacked country in Asia.','Sa Philippines, avoid relying on a single old ranking. The practical 2026 focus is resilience: protect identities and payments, manage third-party access, secure cloud services, train users against AI-assisted impersonation, and maintain tested incident-response procedures.'),
+              ('IS Trends 2024-2025: The Big Picture','IS Trends 2026: The Big Picture'),
+              ('Name 3 cybersecurity threats facing organizations in 2024-2025.','Name 3 cybersecurity threats facing organizations in 2026.'),
+              ('Cloud (IaaS/PaaS/SaaS) is the new default — 94% enterprise adoption, 30% cost savings','Cloud (IaaS/PaaS/SaaS) is core infrastructure — AI workloads are accelerating IaaS and data-center investment'),
+              ('<span class="eyebrow reveal d1">Cloud Adoption Data</span>\n  <h2 class="reveal d2">Global Cloud Adoption Statistics</h2>','<span class="eyebrow reveal d1">2026 Cloud Reality</span>\n  <h2 class="reveal d2">Cloud + AI Infrastructure Are Strategic Capacity</h2>'),
+              ('<div class="stat-item"><div class="number">$679B</div><div class="label">Global cloud market<br>size 2024</div></div>','<div class="stat-item"><div class="number">$6.37T</div><div class="label">Worldwide IT spending<br>forecast for 2026</div></div>'),
+              ('<div class="stat-item"><div class="number">94%</div><div class="label">Enterprises using<br>cloud services</div></div>','<div class="stat-item"><div class="number">14.2%</div><div class="label">Forecast IT spending<br>growth vs. 2025</div></div>'),
+              ('<div class="stat-item"><div class="number">60%</div><div class="label">Corporate data stored<br>in the cloud</div></div>','<div class="stat-item"><div class="number">IaaS</div><div class="label">Among the strongest<br>infrastructure growth areas</div></div>'),
+              ('<div class="stat-item"><div class="number">30%</div><div class="label">Average cost savings<br>vs on-premise</div></div>','<div class="stat-item"><div class="number">AI</div><div class="label">Driving cloud and<br>data-center demand</div></div>'),
+              ('Sources: Gartner, Flexera State of the Cloud Report 2024','2026 basis: Gartner worldwide IT spending forecast'),
+              ('Global cloud market: $679 billion in 2024. 94% of enterprises use cloud services — that\'s basically everyone. 60% of corporate data is now stored in the cloud — more than on-premise! Average cost savings: 30% versus maintaining your own servers. These numbers show — cloud is not the future anymore, it\'s the PRESENT. If you\'re not in the cloud, you\'re behind.','For 2026, the more useful message is not a single cloud-adoption percentage. Gartner forecasts worldwide IT spending at about $6.37 trillion, with data-center systems and IaaS among the strongest growth areas because organizations are building capacity for AI workloads. Cloud is now part of core enterprise architecture, but cost, security, data residency, resilience, and vendor concentration still need governance.'),
+              ('<tr><td><strong>Generative AI</strong></td><td>Early Mainstream</td><td>🔥🔥🔥 Very High</td></tr>','<tr><td><strong>Agentic & Multiagent AI</strong></td><td>Rapid Enterprise Expansion</td><td>🔥🔥🔥 Very High</td></tr>'),
+              ('<tr><td><strong>Cloud Computing</strong></td><td>Mature/Standard</td><td>🔥🔥🔥 Very High</td></tr>','<tr><td><strong>Cloud + AI Infrastructure</strong></td><td>Core Enterprise Platform</td><td>🔥🔥🔥 Very High</td></tr>'),
+              ('<tr><td><strong>Cybersecurity</strong></td><td>Critical/Ongoing</td><td>🔥🔥🔥 Very High</td></tr>','<tr><td><strong>AI Security & Preemptive Cybersecurity</strong></td><td>Critical / Accelerating</td><td>🔥🔥🔥 Very High</td></tr>'),
+              ('<tr><td><strong>Low-Code/No-Code</strong></td><td>Growing Fast</td><td>🔥🔥 High</td></tr>','<tr><td><strong>Domain-Specific AI + Low-Code</strong></td><td>Growing Fast</td><td>🔥🔥 High</td></tr>'),
+              ('<tr><td><strong>API Economy</strong></td><td>Mature</td><td>🔥🔥 High</td></tr>','<tr><td><strong>APIs & Workflow Orchestration</strong></td><td>Mature / Expanding</td><td>🔥🔥 High</td></tr>'),
+          ])
+
+          apply('Week03_Session01_IS_Philippine_Organizations.html', [
+              ('<div class="stat-item"><div class="number">78.5M</div><div class="label">Internet users<br>(2024)</div></div>','<div class="stat-item"><div class="number">98.0M</div><div class="label">Internet users<br>Digital 2026</div></div>'),
+              ('<div class="stat-item"><div class="number">86M+</div><div class="label">E-wallet<br>accounts</div></div>','<div class="stat-item"><div class="number">94M</div><div class="label">Filipinos who have<br>used GCash</div></div>'),
+              ('<div class="stat-item"><div class="number">$17.5B</div><div class="label">Digital economy<br>value (2025 est.)</div></div>','<div class="stat-item"><div class="number">58%</div><div class="label">Adult formal account<br>ownership, Q1 2026</div></div>'),
+              ('78.5 million internet users — more than half the population. 86 million+ e-wallet accounts — mas daghan pa sa internet users! $17.5 billion estimated digital economy value by 2025.','Digital 2026 reports about 98 million internet users in the Philippines. GCash reports 94 million Filipinos have used the service, while BSP cited 58% formal financial-account ownership among adults in Q1 2026. These indicators show how deeply digital channels now reach consumers.'),
+              ('<strong>2024:</strong> 86M+ users, 3M+ merchants, expanded to loans, investments, insurance','<strong>2026:</strong> 94M Filipinos have used GCash; 6M merchants and social sellers on the app'),
+              ('By 2024: 86 million users, 3 million merchants.','By 2026, GCash reports 94 million Filipinos have used the platform, with around 6 million merchants and social sellers on the app.'),
+              ('<li><strong>1.7M employed</strong> in Philippine BPO sector (2024)</li>\n      <li><strong>$32.5B revenue</strong> — 2nd largest BPO market globally</li>','<li><strong>2026 revenue outlook: $42.3B</strong> after surpassing $40B in 2025</li>\n      <li><strong>2026 workforce outlook: ~1.96M</strong> digital workers</li>'),
+              ('1.7 million employees, $32.5 billion in revenue, second largest globally after India.','The IT-BPM industry entered 2026 from a 2025 base of about $40.3 billion in revenue and 1.9 million workers. The updated 2026 industry outlook points to roughly $42.3 billion in revenue and about 1.96 million workers, while AI-enabled services and higher-value global capability centers reshape the work mix.'),
+              ('<li><strong>AI Integration:</strong> Chatbots handle 40% of routine queries</li>','<li><strong>AI Integration:</strong> Shift from routine automation toward AI-enabled, higher-value services</li>'),
+              ('AI chatbots now handle 40% of routine customer queries — agents handle complex cases only.','AI copilots and automation increasingly handle routine work, while human teams move toward complex service, judgment, relationship, and higher-value tasks.'),
+              ('92M+ registered (2024)','Digital National ID integrated across digital services'),
+              ('Launched 2023','800M+ transactions / 56M downloads by June 2026'),
+              ('PhilSys — our national ID — 92 million registered already. eFPS ug eBIRForms — we file taxes online now. eGov PH Super App launched in 2023 — one app for government services.','The National ID is increasingly used for digital identity and account verification. eFPS ug eBIRForms remain core tax systems. By June 2026, DICT reported more than 800 million eGovPH transactions and 56 million downloads, showing that government digital services are now operating at national scale.'),
+              ('<tr><td><strong>Philippine Digital Workforce Strategy</strong></td><td>2023</td><td>Upskill workforce for digital economy</td></tr>','<tr><td><strong>R.A. 12254 (E-Governance Act)</strong></td><td>2025</td><td>Institutionalize integrated, citizen-centered e-governance</td></tr>\n    <tr><td><strong>E-Governance Act IRR</strong></td><td>2026</td><td>Operational rules for interoperability, privacy, security, and digital government</td></tr>\n    <tr><td><strong>Executive Order No. 119</strong></td><td>2026</td><td>Modernize government data classification and establish a data-residency framework</td></tr>'),
+              ('• Consent before collecting personal data<br>• Purpose limitation (use only for stated purpose)<br>• Proportionality (collect only what\'s needed)<br>• Data breach notification within 72 hours','• Identify a lawful basis for processing; consent is only one possible basis<br>• Transparency, legitimate purpose, and proportionality<br>• Apply reasonable organizational, physical, and technical safeguards<br>• Escalate breaches quickly; notification duties depend on the mandatory-breach criteria'),
+              ('• Client financial data = sensitive personal info','• Tax returns, government identifiers, and legally defined categories may be sensitive personal information; other financial records remain highly confidential'),
+              ('Cannot share without consent.','Share only when there is lawful basis, proper authority, and appropriate safeguards.'),
+          ])
+
+          apply('Week03_Session02_Technology_Evaluation_Frameworks.html', [
+              ('<tr><th>Feature</th><th>Xero</th><th>QuickBooks Online</th><th>Wave (Free)</th></tr>','<tr><th>Feature</th><th>Xero</th><th>QuickBooks Online</th><th>Zoho Books</th></tr>'),
+              ('<tr><td><strong>Price (PH)</strong></td><td>$15-78/mo</td><td>$15-100/mo</td><td>FREE</td></tr>','<tr><td><strong>Pricing</strong></td><td>Subscription; varies by plan/region</td><td>Subscription; varies by plan/region</td><td>Subscription; varies by plan/region</td></tr>'),
+              ('<tr><td><strong>Integrations</strong></td><td>✅ 1000+ apps</td><td>✅ 750+ apps</td><td>⚠️ Few</td></tr>','<tr><td><strong>Integrations</strong></td><td>✅ Broad ecosystem</td><td>✅ Broad ecosystem</td><td>✅ Zoho ecosystem + APIs</td></tr>'),
+              ('Wave — FREE! Great for micro-businesses pero limited features.','Zoho Books is another current cloud-accounting option. Pricing and features change by plan and region, so verify the vendor site at the time of purchase instead of memorizing an old price table.'),
+              ('<p><strong>POS Options to Consider:</strong> Square, Loyverse (free), GCash Business, Maya Business Terminal, Vend, or any local option you find!</p>','<p><strong>POS Options to Consider:</strong> Square, Loyverse, GCash Business, Maya Business, Lightspeed Retail, or a current local POS option you verify!</p>'),
+          ])
+
+          apply('Week04_Session01_Professional_Technology_Briefs.html', [
+              ('replace the outdated desktop system by Q2 2025','replace the outdated desktop system by Q2 2026'),
+              ('Xero, QuickBooks Online, and Wave','Xero, QuickBooks Online, and Zoho Books'),
+              ('Tools: Xero vs Wave.','Tools: Xero vs Zoho Books.'),
+              ('comparing Xero vs Wave','comparing Xero vs Zoho Books'),
+          ])
+          apply('Week04_Session02_Module1_Review_and_Exam1.html', [
+              ('IS Trends 2024-2025 (GenAI, Cloud, Cybersecurity)','IS Trends 2026 (Agentic AI, Cloud/AI Infrastructure, Cybersecurity)'),
+              ('2024-2025 trends','2026 trends'),
+          ])
+          apply('Week09_Session01_Business_Intelligence_Data_Foundations.html', [('"₱45,000" or "2025-07-15"','"₱45,000" or "2026-07-15"')])
+          apply('Week11_Session02_Analytics_Output_Workshop.html', [('"GenSan Fresh Foods showed stable total revenue in H1 2025..."','"GenSan Fresh Foods showed stable total revenue in H1 2026..."')])
+
+          apply('Week10_Session01_AI_Machine_Learning_Accountants.html', [
+              ('<tr><td><b>Generative AI</b></td><td>DL models that CREATE new content (text, images, code)</td><td>ChatGPT, Claude, DALL-E, GitHub Copilot</td></tr>','<tr><td><b>Generative AI</b></td><td>Models that create or transform text, images, code, audio, and other content</td><td>ChatGPT, Claude, Gemini, Copilot</td></tr><tr><td><b>Agentic AI</b></td><td>AI systems that plan multi-step work and use approved tools, APIs, or other agents</td><td>Reconciliation assistant that gathers data, flags exceptions, drafts a workpaper, then waits for human approval</td></tr>'),
+              ('AI applications in accounting (today)','AI applications in accounting (2026)'),
+              ('<div class="cd"><h3>Report generation</h3><p>Drafts narratives, management discussion, variance explanations.</p></div>','<div class="cd"><h3>Agentic workflows</h3><p>Coordinates approved tools for reconciliations, exception follow-up, workpaper drafting, and close support with human checkpoints.</p></div>'),
+              ('<section class="slide sec"><h1>03<br>AI risks and ethics</h1>','<section class="slide"><span class="ey">2026 Practice</span><h2>AI agents: from answering to acting</h2><div class="g2"><div class="cd"><h3>What changes</h3><p>Agents can call APIs, search approved data, trigger workflows, create drafts, and hand tasks to specialized agents.</p></div><div class="cd"><h3>What must stay controlled</h3><p>Give every agent a defined identity, least-privilege permissions, approved tools, action limits, human approval points, logs, and a way to revoke access.</p></div></div><div class="co"><p><b>Accounting rule:</b> material posting, payment, filing, or client-facing decisions should require accountable human authorization.</p></div></section>\n<section class="slide sec"><h1>03<br>AI risks and ethics</h1>'),
+              ('Current applications: document processing, anomaly detection, forecasting, drafting','Current applications: document processing, anomaly detection, forecasting, drafting, and governed agentic workflows'),
+          ])
+
+          apply('Week13_Session01_Cybersecurity_Foundations.html', [
+              ('Common threats in 2025','Common threats in 2026'),
+              ('<div class="cd"><h3>Phishing</h3><p>Fake messages trick users into clicking, sharing credentials, or sending money.</p></div>','<div class="cd"><h3>AI-enhanced impersonation</h3><p>Phishing, voice cloning, and deepfakes make fake executive, vendor, and customer requests more convincing.</p></div>'),
+              ('<div class="cd"><h3>Ransomware</h3><p>Malware encrypts data or systems and demands payment.</p></div>','<div class="cd"><h3>Ransomware & extortion</h3><p>Attackers disrupt operations, steal data, and pressure victims through encryption or leak threats.</p></div>'),
+              ('<div class="cd"><h3>Credential attacks</h3><p>Stolen or reused passwords give attackers access.</p></div>','<div class="cd"><h3>Credential & session theft</h3><p>Stolen passwords, cookies, tokens, and MFA abuse let attackers enter legitimate cloud accounts.</p></div>'),
+              ('Identity is the new security perimeter.','Identity — including human and machine identities — is the new security perimeter.'),
+          ])
+
+          apply('Week14_Session01_Data_Privacy_Philippine_Compliance.html', [
+              ('Protecting personal information in accounting information systems','Protecting personal information in accounting systems — updated for the 2026 Philippine digital environment'),
+              ('SCRIPT: “The principle to remember is proportionality: just because you can collect data does not mean you should.”','SCRIPT: “The Data Privacy Act of 2012 remains the core privacy law in 2026. The principle to remember is proportionality: just because you can collect data does not mean you should.”'),
+              ("['content','Privacy roles'", "['content','2026 Philippine compliance context','Current rules around the core Data Privacy Act',['R.A. 12254, the E-Governance Act (2025), and its 2026 IRR emphasize interoperability, privacy-by-design, privacy engineering, and security','Executive Order No. 119 (2026) modernized government data classification and established a data-residency framework','NPC Advisory 2026-01 addresses scraping of publicly available personal data','AI-generated use of a real person’s likeness can still involve personal-data processing','Newer rules add context; they do not replace the Data Privacy Act'],'SCRIPT: “In 2026, privacy compliance also intersects with e-governance, data residency, data scraping, AI-generated likenesses, and privacy engineering.”'],\n['content','Privacy roles'"),
+              ('Questions for cloud providers','Questions for cloud and AI providers'),
+              ('What data is processed and where?','What data is processed, where is it stored, and what residency rules apply?'),
+          ])
+
+          p = Path('script.js')
+          s = p.read_text(encoding='utf-8')
+          ns = s.replace('"IS Trends 2024–2025"','"IS Trends 2026"')
+          if ns != s:
+              p.write_text(ns, encoding='utf-8')
+              changed.append('script.js')
+
+          print('Changed:', *changed, sep='\n- ')
+          PY
+
+          rm -rf .github/refresh2026 || true
+
+          # Guardrails: protected lessons must not be edited by this job.
+          git diff --name-only | grep -E '^lessons/(Week01_|Week02_Session01_)' && {
+            echo 'Protected lesson changed unexpectedly'; exit 1;
+          } || true
+
+      - name: Commit refreshed lessons
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'No lesson changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lessons script.js .github/refresh2026 2>/dev/null || true
+          git commit -m 'Refresh PROFEL 2 lessons for 2026'
+          git push
