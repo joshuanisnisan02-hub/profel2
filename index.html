@@ -6,6 +6,23 @@
   <meta name="theme-color" content="#07111f">
   <title>PROFEL 2 | Updates in Information Systems</title>
   <meta name="description" content="PROFEL 2 lesson holder for Updates in Information Systems — 18 weeks, 36 interactive lesson presentations.">
+  <script>
+    (() => {
+      const url = new URL(window.location.href);
+      const trackingParams = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','utm_id','gclid','fbclid'];
+      let changed = false;
+      trackingParams.forEach((param) => {
+        if (url.searchParams.has(param)) {
+          url.searchParams.delete(param);
+          changed = true;
+        }
+      });
+      if (changed) {
+        const cleanUrl = url.pathname + (url.search ? url.search : '') + url.hash;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    })();
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
